@@ -17,6 +17,11 @@ from app.core.storage import storage_manager
 from app.core.signer import url_signer
 from app.core.zipper import zip_streamer
 from app.utils import decode_base64_chunk, guess_mime_type, validate_filename, get_range_from_header
+from app.core.logging import (
+    log_upload_start, log_upload_complete, log_upload_failed,
+    log_download, log_file_delete, log_auth_success, log_auth_failed,
+    app_logger, error_logger
+)
 
 router = APIRouter(prefix="/v1/files")
 
@@ -104,10 +109,12 @@ async def upload_part(
 @router.post("/complete", response_model=CompleteUploadResponse)
 async def complete_upload(
     request: CompleteUploadRequest,
+    http_request: Request,
     user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Complete an upload and finalize the file."""
     user_id = user["user_id"]
+    client_ip = http_request.client.host if http_request.client else "unknown"
     
     # Generate file key with folder support
     filename = request.meta.get("filename", "uploaded_file") if request.meta else "uploaded_file"
@@ -125,6 +132,7 @@ async def complete_upload(
         if request.sha256 and request.sha256 != calculated_sha256:
             # Clean up the file
             await storage_manager.delete_file(file_key)
+            log_upload_failed(user_id, filename, "sha256_mismatch", client_ip)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="SHA256 mismatch"
@@ -143,6 +151,22 @@ async def complete_upload(
         }
         
         await storage_manager.store_file_metadata(file_key, metadata)
+        
+        # Log successful upload completion
+        log_upload_complete(user_id, file_key, filename, file_size, client_ip)
+        app_logger.info(f"Upload completed successfully: {file_key} ({file_size} bytes)")
+        
+        return CompleteUploadResponse(
+            fileKey=file_key,
+            sha256=calculated_sha256,
+            fileSize=file_size
+        )
+        
+    except Exception as e:
+        # Log upload failure
+        log_upload_failed(user_id, filename, str(e), client_ip)
+        error_logger.error(f"Upload completion failed for user {user_id}: {str(e)}")
+        raise
         
         return CompleteUploadResponse(
             key=file_key,

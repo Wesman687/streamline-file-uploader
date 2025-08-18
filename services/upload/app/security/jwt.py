@@ -88,8 +88,19 @@ class JWTValidator:
             )
 
     def verify_service_token(self, token: str) -> bool:
-        """Verify service-to-service token."""
-        return token == self.service_token
+        """Verify service authentication token."""
+        from app.core.logging import log_auth_success, log_auth_failed
+        
+        is_valid = token == self.service_token
+        
+        if is_valid:
+            # Note: IP would need to be passed in for proper logging
+            # For now, we'll log without IP in service context
+            log_auth_success("service", "service_token", "service")
+        else:
+            log_auth_failed("service_token", "invalid_token", "unknown")
+            
+        return is_valid
 
 
 # Global instance

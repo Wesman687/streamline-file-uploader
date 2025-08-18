@@ -11,38 +11,47 @@ import base64
 from app.routes.files import router as files_router
 from app.core.storage import storage_manager
 from app.utils import get_range_from_header
+from app.middleware.logging import LoggingMiddleware
+from app.core.logging import app_logger, error_logger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan events."""
+    """Application startup and shutdown."""
     # Startup
-    print("Starting Upload Server...")
+    app_logger.info("Starting Upload Server...")
     
-    # Verify required environment variables
-    required_env_vars = [
-        "AUTH_SERVICE_TOKEN",
-        "UPLOAD_SIGNING_KEY"
-    ]
+    # Ensure storage directory exists
+    storage_manager.upload_root.mkdir(parents=True, exist_ok=True)
     
-    missing_vars = []
-    for var in required_env_vars:
-        if not os.getenv(var):
-            missing_vars.append(var)
-    
-    # Check JWT key separately (optional for testing)
-    if not os.getenv("AUTH_JWT_PUBLIC_KEY_BASE64"):
-        print("Warning: AUTH_JWT_PUBLIC_KEY_BASE64 not set - JWT authentication will be disabled")
-    
-    if missing_vars:
-        raise RuntimeError(f"Missing required environment variables: {', '.join(missing_vars)}")
-    
-    print("Upload Server started successfully!")
+    # Log startup completion
+    app_logger.info("Upload Server started successfully!")
     
     yield
     
     # Shutdown
-    print("Shutting down Upload Server...")
+    app_logger.info("Upload Server shutting down...")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="Stream-Line Upload Server",
+    description="Production file upload and management service",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Add logging middleware (first, to catch all requests)
+app.add_middleware(LoggingMiddleware)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Create FastAPI app
@@ -100,9 +109,18 @@ async def root():
 @app.head("/storage/{user_id}/{file_path:path}")
 async def serve_storage_file(user_id: str, file_path: str, request: Request):
     """Serve files directly from storage paths."""
+    from app.core.logging import log_download
+    
+    # Get client info
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "")
+    
     try:
         # Construct the full file key
         full_key = f"storage/{user_id}/{file_path}"
+        
+        # Log the file access
+        log_download(user_id, full_key, client_ip, user_agent)
         
         # Get the actual file path
         actual_file_path = storage_manager.get_file_path(full_key)

@@ -6,7 +6,7 @@ A production-ready file upload and management service for Stream-Line customers.
 
 ## ✅ Live Features
 
-- **File Upload API** - Multiple upload modes (single, chunked, batch) 
+- **File Upload API** - Multiple upload modes (single, chunked, batch)
 - **File Listing** - `/v1/files/all` endpoint with folder filtering
 - **Direct Storage Access** - Public URLs: `/storage/{user-id}/{path}`
 - **JWT Authentication** - Full Stream-Line integration with JWKS
@@ -210,6 +210,7 @@ curl -H "X-Service-Token: <service-token>" \
 ```
 
 Response:
+
 ```json
 {
   "files": [
@@ -239,6 +240,7 @@ https://file-server.stream-lineai.com/storage/user123/documents/def456_document.
 ```
 
 **Features:**
+
 - No authentication required
 - Supports HTTP range requests for video/audio streaming
 - Proper MIME type detection from metadata

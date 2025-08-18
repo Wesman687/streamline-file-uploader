@@ -25,6 +25,7 @@ wheels/
 venv/
 ENV/
 env/
+client_demo.py
 
 # Environment files with secrets
 *.env

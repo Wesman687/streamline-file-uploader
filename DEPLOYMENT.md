@@ -3,12 +3,14 @@
 ## Quick Deployment Steps
 
 ### 1. Clone Repository
+
 ```bash
 git clone git@github.com:Wesman687/file-uploader.git
 cd file-uploader/services/upload
 ```
 
 ### 2. Setup Environment
+
 ```bash
 # Create Python virtual environment
 python3 -m venv .venv
@@ -21,6 +23,7 @@ cp env.template production.env
 ```
 
 ### 3. Generate JWT Keys
+
 ```bash
 # Create directories
 sudo mkdir -p /etc/stream-line/keys
@@ -40,17 +43,19 @@ sudo chmod 755 /etc/stream-line/keys/
 ```
 
 ### 4. Generate Secure Tokens
+
 ```bash
 # Generate service token
 openssl rand -hex 32
 
-# Generate signing key  
+# Generate signing key
 openssl rand -hex 32
 
 # Add these to your production.env file
 ```
 
 ### 5. Setup Storage
+
 ```bash
 sudo mkdir -p /data/uploads/storage
 sudo chown ubuntu:ubuntu /data/uploads
@@ -58,6 +63,7 @@ sudo chmod 755 /data/uploads
 ```
 
 ### 6. Install System Configuration
+
 ```bash
 # Copy environment config
 sudo cp production.env /etc/stream-line/upload.env
@@ -69,22 +75,23 @@ sudo systemctl start upload-server
 ```
 
 ### 7. Setup Nginx & SSL
+
 ```bash
 # Create nginx config (adjust domain name)
 sudo tee /etc/nginx/sites-available/file-server.domain.com > /dev/null << 'EOF'
 server {
   listen 80;
   server_name file-server.domain.com;
-  
-  location /.well-known/acme-challenge/ { 
-    root /var/www/html; 
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/html;
   }
-  
+
   client_max_body_size 5G;
   client_body_timeout 300s;
   proxy_read_timeout 300s;
   proxy_send_timeout 300s;
-  
+
   location / {
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -108,6 +115,7 @@ sudo certbot --nginx -d file-server.domain.com --non-interactive --agree-tos -m 
 ```
 
 ### 8. Verify Deployment
+
 ```bash
 # Check service status
 sudo systemctl status upload-server
@@ -125,6 +133,7 @@ sudo journalctl -u upload-server -f
 See `env.template` for all required environment variables.
 
 Key variables to customize:
+
 - `PUBLIC_BASE_URL` - Your domain
 - `AUTH_JWT_ISSUER` - Your JWT issuer
 - `AUTH_JWT_AUDIENCE` - Your app name
