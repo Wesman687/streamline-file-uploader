@@ -78,6 +78,10 @@ print_step "Downloading configuration files..."
 curl -s https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker-compose.yml > docker-compose.yml
 curl -s https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/Dockerfile > Dockerfile
 
+# Also download the requirements.txt file for the build
+mkdir -p services/upload
+curl -s https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/services/upload/requirements.txt > services/upload/requirements.txt
+
 # Create nginx config
 print_step "Creating nginx configuration..."
 cat > nginx.conf << EOF

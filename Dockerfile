@@ -27,6 +27,9 @@ RUN chown -R streamline:streamline /app
 # Switch to app user
 USER streamline
 
+# Set Python path so imports work correctly
+ENV PYTHONPATH=/app/services/upload
+
 # Expose port
 EXPOSE 8000
 
@@ -34,5 +37,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
-# Start the server
+# Start the server from the correct directory
+WORKDIR /app/services/upload
 CMD ["python", "app/main.py"]
