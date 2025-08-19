@@ -14,7 +14,7 @@ from app.models import (
     SignedUrlRequest, BatchDownloadRequest, BatchDownloadResponse,
     HealthResponse, ErrorResponse, Disposition, FileListResponse, FileListItem
 )
-from app.security.jwt import get_current_user, get_auth_user_or_service, bearer_scheme
+from app.security.jwt import get_current_user, get_auth_user_or_service, bearer_scheme, jwt_validator
 from app.core.storage import storage_manager
 from app.core.signer import url_signer
 from app.core.zipper import zip_streamer
@@ -516,13 +516,111 @@ async def serve_file(
 @router.get("/healthz", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
-    disk_usage = storage_manager.get_disk_usage()
-    writable = storage_manager.is_writable()
+    try:
+        # Check if storage is writable
+        writable = storage_manager.is_writable()
+        
+        # Check available disk space
+        import shutil
+        total, used, free = shutil.disk_usage(storage_manager.upload_root)
+        free_gb = free / (1024**3)
+        
+        return HealthResponse(
+            status="healthy",
+            disk_free_gb=round(free_gb, 2),
+            writable=writable
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Health check failed: {str(e)}"
+        )
+
+
+# Service-only endpoint for JWT token generation
+@router.post("/generate-token")
+async def generate_jwt_token(
+    request: Request,
+    user_id: str,
+    expires_hours: int = 1
+):
+    """
+    Generate a JWT token for a user (service authentication required).
+    This endpoint allows your other services to generate user JWTs.
+    """
+    # Verify service authentication
+    service_token = request.headers.get("x-service-token")
+    if not service_token or not jwt_validator.verify_service_token(service_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid service token"
+        )
     
-    status_code = "healthy" if writable and disk_usage["free_gb"] > 1 else "unhealthy"
-    
-    return HealthResponse(
-        status=status_code,
-        disk_free_gb=disk_usage["free_gb"],
-        writable=writable
-    )
+    try:
+        from jose import jwt as jose_jwt
+        import datetime
+        from cryptography.hazmat.primitives import serialization
+        from pathlib import Path
+        
+        # Load private key for signing
+        private_key_path = os.getenv("JWT_PRIVATE_KEY_PATH")
+        if not private_key_path or not Path(private_key_path).exists():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="JWT signing not configured"
+            )
+        
+        try:
+            with open(private_key_path, 'rb') as f:
+                private_key = serialization.load_pem_private_key(f.read(), password=None)
+        except PermissionError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="JWT private key not accessible"
+        
+        # Create JWT payload
+        now = datetime.datetime.utcnow()
+        payload = {
+            'user_id': user_id,
+            'iss': os.getenv('AUTH_JWT_ISSUER', 'https://stream-lineai.com'),
+            'aud': os.getenv('AUTH_JWT_AUDIENCE', 'streamline-apps'),
+            'exp': now + datetime.timedelta(hours=expires_hours),
+            'iat': now,
+            'sub': user_id
+        }
+        
+        # Generate token
+        token = jose_jwt.encode(
+            payload,
+            private_key,
+            algorithm='RS256',
+            headers={'kid': os.getenv('JWKS_KID', 'streamline-rsa-1')}
+        )
+        
+        # Log token generation
+        client_ip = get_client_ip(request)
+        log_user_activity(
+            action="jwt_token_generated",
+            user_id=user_id,
+            details={
+                "expires_hours": expires_hours,
+                "generated_by": "service"
+            },
+            client_ip=client_ip
+        )
+        
+        server_logger.info(f"JWT token generated for user {user_id} (expires in {expires_hours}h)")
+        
+        return {
+            "token": token,
+            "user_id": user_id,
+            "expires_in": expires_hours * 3600,  # seconds
+            "token_type": "Bearer"
+        }
+        
+    except Exception as e:
+        error_logger.error(f"Failed to generate JWT token for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate token"
+        )
