@@ -6,7 +6,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from app.logging_config import server_logger, error_logger
+            server_logger.info("Service token authentication successful")
+        else:
+            server_logger.warning("Service token authentication failed")
+        
+        return is_valids, Request, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import JWTError, jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 class JWTValidator:
@@ -20,7 +28,7 @@ class JWTValidator:
         try:
             self.public_key = self._load_public_key()
         except Exception as e:
-            server_logger.warning(f"Failed to load JWT public key: {e}")
+            print(f"Warning: Failed to load JWT public key: {e}")
             self.public_key = None
         
         self.service_token = os.getenv("AUTH_SERVICE_TOKEN")
@@ -83,28 +91,31 @@ class JWTValidator:
             )
             return payload
         except JWTError as e:
-            error_logger.warning(f"JWT validation failed: {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                detail=f"Invalid JWT token: {e}"
             )
 
     def verify_service_token(self, token: str) -> bool:
         """Verify service authentication token."""
+        from app.core.logging import log_auth_success, log_auth_failed
+        
         is_valid = token == self.service_token
         
         if is_valid:
-            server_logger.info("Service token authentication successful")
+            # Note: IP would need to be passed in for proper logging
+            # For now, we'll log without IP in service context
+            log_auth_success("service", "service_token", "service")
         else:
-            server_logger.warning("Service token authentication failed")
-        
+            log_auth_failed("service_token", "invalid_token", "unknown")
+            
         return is_valid
 
 
-# Global validator instance
+# Global instance
 jwt_validator = JWTValidator()
 
-# HTTP Bearer security scheme
+# Security schemes
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -112,14 +123,15 @@ async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)
 ) -> Dict[str, Any]:
-    """Extract and validate JWT from Authorization header or cookies."""
+    """Extract and validate user from JWT token (Bearer or Cookie)."""
     token = None
     
-    # Try Authorization header first
+    # Try Bearer token first
     if credentials:
         token = credentials.credentials
-    else:
-        # Try cookie fallback
+    
+    # Try cookie if no Bearer token
+    if not token:
         token = request.cookies.get("auth_token")
     
     if not token:
@@ -128,53 +140,51 @@ async def get_current_user(
             detail="Authentication required"
         )
     
-    try:
-        payload = jwt_validator.verify_jwt(token)
-        server_logger.info(f"JWT authentication successful for user: {payload.get('user_id', 'unknown')}")
-        return payload
-    except HTTPException:
-        error_logger.warning("JWT authentication failed")
-        raise
+    payload = jwt_validator.verify_jwt(token)
+    
+    if "user_id" not in payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: missing user_id"
+        )
+    
+    return payload
+
+
+async def get_service_auth(request: Request) -> bool:
+    """Validate service-to-service authentication."""
+    service_token = request.headers.get("X-Service-Token")
+    
+    if not service_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Service token required"
+        )
+    
+    if not jwt_validator.verify_service_token(service_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid service token"
+        )
+    
+    return True
 
 
 async def get_auth_user_or_service(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)
 ) -> Optional[Dict[str, Any]]:
-    """
-    Authentication for endpoints that support both user JWT and service tokens.
-    Returns user payload for JWT auth, None for service auth.
-    """
-    # Check for service token in headers
-    service_token = request.headers.get("x-service-token")
+    """Get user from JWT or validate service token. Returns user payload or None for service."""
+    # Try service token first
+    service_token = request.headers.get("X-Service-Token")
     if service_token:
         if jwt_validator.verify_service_token(service_token):
-            server_logger.info("Service authentication successful")
-            return None  # Indicates service authentication
+            return None  # Service authentication, no user
         else:
-            error_logger.warning("Service authentication failed")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid service token"
             )
     
-    # Try JWT authentication
-    token = None
-    if credentials:
-        token = credentials.credentials
-    else:
-        token = request.cookies.get("auth_token")
-    
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required"
-        )
-    
-    try:
-        payload = jwt_validator.verify_jwt(token)
-        server_logger.info(f"JWT authentication successful for user: {payload.get('user_id', 'unknown')}")
-        return payload
-    except HTTPException:
-        error_logger.warning("JWT authentication failed")
-        raise
+    # Fall back to user authentication
+    return await get_current_user(request, credentials)

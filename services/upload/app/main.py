@@ -11,74 +11,47 @@ import base64
 from app.routes.files import router as files_router
 from app.core.storage import storage_manager
 from app.utils import get_range_from_header
-from app.middleware.logging import LoggingMiddleware
-from app.core.logging import app_logger, error_logger
+from app.logging_config import server_logger, error_logger
+from app.middleware.access_logging import AccessLoggingMiddleware
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application startup and shutdown."""
+    """Application lifespan events."""
     # Startup
-    app_logger.info("Starting Upload Server...")
-    
-    # Ensure storage directory exists
-    storage_manager.upload_root.mkdir(parents=True, exist_ok=True)
-    
-    # Log startup completion
-    app_logger.info("Upload Server started successfully!")
-    
+    server_logger.info("Starting Upload Server...")
+    server_logger.info("Upload Server started successfully!")
     yield
-    
     # Shutdown
-    app_logger.info("Upload Server shutting down...")
+    server_logger.info("Upload Server shutting down...")
 
 
-# Create FastAPI app
-app = FastAPI(
-    title="Stream-Line Upload Server",
-    description="Production file upload and management service",
-    version="1.0.0",
-    lifespan=lifespan
-)
-
-# Add logging middleware (first, to catch all requests)
-app.add_middleware(LoggingMiddleware)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# Create FastAPI app
 app = FastAPI(
     title="Stream-Line Upload Server",
     description="File upload and management service for Stream-Line customers",
     version="1.0.0",
-    lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc"
+    lifespan=lifespan
 )
 
-# CORS middleware
+# Add middleware
+app.add_middleware(AccessLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure as needed for production
+    allow_origins=["*"],  # Configure as needed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include routers
+app.include_router(files_router)
 
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unhandled errors."""
-    print(f"Unhandled exception: {type(exc).__name__}: {exc}")
+    error_logger.error(f"Unhandled exception: {type(exc).__name__}: {exc}")
+    server_logger.error(f"Unhandled exception on {request.method} {request.url}: {exc}")
     
     return JSONResponse(
         status_code=500,
@@ -109,10 +82,17 @@ async def root():
 @app.head("/storage/{user_id}/{file_path:path}")
 async def serve_storage_file(user_id: str, file_path: str, request: Request):
     """Serve files directly from storage paths."""
-    from app.core.logging import log_download
+    import json
+    import time
+    from app.logging_config import activity_logger
     
     # Get client info
     client_ip = request.client.host if request.client else "unknown"
+    if "x-forwarded-for" in request.headers:
+        client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
+    elif "x-real-ip" in request.headers:
+        client_ip = request.headers["x-real-ip"]
+    
     user_agent = request.headers.get("user-agent", "")
     
     try:
@@ -120,7 +100,19 @@ async def serve_storage_file(user_id: str, file_path: str, request: Request):
         full_key = f"storage/{user_id}/{file_path}"
         
         # Log the file access
-        log_download(user_id, full_key, client_ip, user_agent)
+        log_data = {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "action": "file_download",
+            "user_id": user_id,
+            "client_ip": client_ip,
+            "file_key": full_key,
+            "details": {
+                "user_agent": user_agent,
+                "method": request.method,
+                "file_path": file_path
+            }
+        }
+        activity_logger.info(json.dumps(log_data))
         
         # Get the actual file path
         actual_file_path = storage_manager.get_file_path(full_key)

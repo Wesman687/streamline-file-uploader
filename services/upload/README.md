@@ -113,7 +113,7 @@ sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
 ```
 
-## API Documentation
+## File-Server API Documentation
 
 Once deployed, API documentation is available at:
 

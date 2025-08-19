@@ -1,5 +1,7 @@
 import base64
 import os
+import json
+import time
 from typing import Optional, Dict, Any
 from uuid import uuid4
 from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
@@ -17,13 +19,31 @@ from app.core.storage import storage_manager
 from app.core.signer import url_signer
 from app.core.zipper import zip_streamer
 from app.utils import decode_base64_chunk, guess_mime_type, validate_filename, get_range_from_header
-from app.core.logging import (
-    log_upload_start, log_upload_complete, log_upload_failed,
-    log_download, log_file_delete, log_auth_success, log_auth_failed,
-    app_logger, error_logger
-)
+from app.logging_config import activity_logger, error_logger, server_logger
 
 router = APIRouter(prefix="/v1/files")
+
+# Helper functions for activity logging
+def log_user_activity(action: str, user_id: str, file_key: str = None, details: dict = None, client_ip: str = None):
+    """Log user file activity."""
+    log_data = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "action": action,
+        "user_id": user_id,
+        "client_ip": client_ip or "unknown",
+        "file_key": file_key,
+        "details": details or {}
+    }
+    activity_logger.info(json.dumps(log_data))
+
+def get_client_ip(request: Request) -> str:
+    """Extract client IP from request."""
+    client_ip = request.client.host
+    if "x-forwarded-for" in request.headers:
+        client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
+    elif "x-real-ip" in request.headers:
+        client_ip = request.headers["x-real-ip"]
+    return client_ip
 
 
 @router.post("/init", response_model=InitUploadResponse)
@@ -153,8 +173,21 @@ async def complete_upload(
         await storage_manager.store_file_metadata(file_key, metadata)
         
         # Log successful upload completion
-        log_upload_complete(user_id, file_key, filename, file_size, client_ip)
-        app_logger.info(f"Upload completed successfully: {file_key} ({file_size} bytes)")
+        client_ip = get_client_ip(http_request)
+        log_user_activity(
+            action="upload_complete",
+            user_id=user_id,
+            file_key=file_key,
+            details={
+                "filename": filename,
+                "file_size": file_size,
+                "mime_type": mime_type,
+                "folder": folder,
+                "sha256": calculated_sha256
+            },
+            client_ip=client_ip
+        )
+        server_logger.info(f"Upload completed successfully: {file_key} ({file_size} bytes) by user {user_id}")
         
         return CompleteUploadResponse(
             fileKey=file_key,
@@ -219,6 +252,7 @@ async def get_signed_url(
 
 @router.get("/all", response_model=FileListResponse)
 async def list_all_files(
+    request: Request,
     folder: Optional[str] = None,
     user_id: Optional[str] = None,
     user_or_service: Optional[Dict[str, Any]] = Depends(get_auth_user_or_service)
@@ -237,6 +271,18 @@ async def list_all_files(
         # User authentication - use authenticated user's ID
         effective_user_id = user_or_service["user_id"]
         # Ignore any provided user_id parameter for security
+    
+    # Log the file listing request
+    client_ip = get_client_ip(request)
+    log_user_activity(
+        action="list_files",
+        user_id=effective_user_id,
+        details={
+            "folder_filter": folder,
+            "auth_type": "service" if user_or_service is None else "user"
+        },
+        client_ip=client_ip
+    )
     
     # Get all files for the user
     files_data = await storage_manager.list_user_files(effective_user_id, folder)
