@@ -89,17 +89,19 @@ async def init_upload(
     
     upload_id = str(uuid4())
     
+    # Create upload session for all upload modes
+    session_metadata = [file_info.dict() for file_info in request.files]
+    if request.folder:
+        session_metadata.append({"folder": request.folder})
+    if request.meta:
+        session_metadata.append({"meta": request.meta})
+    
+    await storage_manager.create_upload_session(
+        upload_id,
+        session_metadata
+    )
+    
     if request.mode == "chunked":
-        # Create upload session for chunked upload
-        session_metadata = [file_info.dict() for file_info in request.files]
-        if request.folder:
-            session_metadata.append({"folder": request.folder})
-        
-        await storage_manager.create_upload_session(
-            upload_id,
-            session_metadata
-        )
-        
         # For chunked uploads, estimate number of parts (assuming 1MB chunks)
         chunk_size = 1024 * 1024  # 1MB
         max_file_size = max(file_info.size for file_info in request.files)
@@ -113,7 +115,7 @@ async def init_upload(
 @router.post("/part")
 async def upload_part(
     request: UploadPartRequest,
-    user: Dict[str, Any] = Depends(get_current_user)
+    user_or_service: Optional[Dict[str, Any]] = Depends(get_auth_user_or_service)
 ):
     """Upload a chunk for chunked upload."""
     try:
@@ -178,7 +180,13 @@ async def complete_upload(
         if request.sha256 and request.sha256 != calculated_sha256:
             # Clean up the file
             await storage_manager.delete_file(file_key)
-            log_upload_failed(user_id, filename, "sha256_mismatch", client_ip)
+            log_user_activity(
+                action="upload_failed",
+                user_id=user_id,
+                file_key=file_key,
+                details={"error": "sha256_mismatch", "expected": request.sha256, "actual": calculated_sha256},
+                client_ip=client_ip
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="SHA256 mismatch"
@@ -223,22 +231,24 @@ async def complete_upload(
         
     except Exception as e:
         # Log upload failure
-        log_upload_failed(user_id, filename, str(e), client_ip)
+        log_user_activity(
+            action="upload_failed",
+            user_id=user_id,
+            details={"error": str(e), "upload_id": request.uploadId},
+            client_ip=client_ip
+        )
         error_logger.error(f"Upload completion failed for user {user_id}: {str(e)}")
-        raise
-        
-        return CompleteUploadResponse(
-            key=file_key,
-            size=file_size,
-            mime=mime_type,
-            sha256=calculated_sha256
-        )
-    
-    except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Upload completion failed"
         )
+
+    return CompleteUploadResponse(
+        key=file_key,
+        size=file_size,
+        mime=mime_type,
+        sha256=calculated_sha256
+    )
 
 
 @router.get("/signed-url")

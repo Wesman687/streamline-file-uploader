@@ -95,17 +95,37 @@ class StreamLineFileClient:
         upload_session = response.json()
         upload_id = upload_session["uploadId"]
         
-        # Step 2: Upload file data
+        # Step 2: Upload file data using the part endpoint
         print(f"   Uploading file data...")
         with open(file_path, 'rb') as f:
             file_data = f.read()
         
-        # Convert to base64
+        # Calculate SHA256 for verification
+        import hashlib
+        sha256_hash = hashlib.sha256(file_data).hexdigest()
+        
+        # Convert to base64 for part upload
         file_b64 = base64.b64encode(file_data).decode('utf-8')
         
+        # Upload as single part
+        part_data = {
+            "uploadId": upload_id,
+            "partNumber": 1,
+            "chunkBase64": file_b64
+        }
+        
+        response = requests.post(
+            f"{self.base_url}/v1/files/part",
+            headers=self.headers,
+            json=part_data
+        )
+        response.raise_for_status()
+        
+        # Step 3: Complete upload with SHA256
+        print(f"   Completing upload...")
         complete_data = {
             "uploadId": upload_id,
-            "parts": [{"data": file_b64}],
+            "sha256": sha256_hash,
             "meta": {
                 "user_id": user_id,
                 **(metadata or {})
