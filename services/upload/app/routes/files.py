@@ -224,9 +224,10 @@ async def complete_upload(
         server_logger.info(f"Upload completed successfully: {file_key} ({file_size} bytes) by user {user_id}")
         
         return CompleteUploadResponse(
-            fileKey=file_key,
-            sha256=calculated_sha256,
-            fileSize=file_size
+            key=file_key,
+            size=file_size,
+            mime=mime_type,
+            sha256=calculated_sha256
         )
         
     except Exception as e:

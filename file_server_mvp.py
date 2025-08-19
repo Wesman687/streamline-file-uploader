@@ -141,7 +141,7 @@ class StreamLineFileClient:
         result = response.json()
         
         # Construct public URL
-        file_key = result["fileKey"]
+        file_key = result["key"]
         # Extract filename from file_key (format: uuid_filename)
         original_filename = '_'.join(file_key.split('_')[1:])
         
