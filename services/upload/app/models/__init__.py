@@ -25,6 +25,7 @@ class InitUploadRequest(BaseModel):
     mode: UploadMode
     files: List[FileInfo]
     folder: Optional[str] = None  # Optional folder path like "main" or "main/pictures"
+    meta: Optional[Dict[str, Any]] = None  # Metadata for service authentication
 
 
 class InitUploadResponse(BaseModel):

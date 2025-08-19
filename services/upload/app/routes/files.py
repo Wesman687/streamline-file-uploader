@@ -49,10 +49,23 @@ def get_client_ip(request: Request) -> str:
 @router.post("/init", response_model=InitUploadResponse)
 async def init_upload(
     request: InitUploadRequest,
-    user: Dict[str, Any] = Depends(get_current_user)
+    http_request: Request,
+    user_or_service: Optional[Dict[str, Any]] = Depends(get_auth_user_or_service)
 ):
     """Initialize a file upload session."""
-    user_id = user["user_id"]
+    
+    # Handle both user and service authentication
+    if user_or_service is None:
+        # Service authentication - get user_id from request metadata
+        if not request.meta or 'user_id' not in request.meta:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Service authentication requires user_id in metadata"
+            )
+        user_id = request.meta['user_id']
+    else:
+        # User authentication - use authenticated user's ID
+        user_id = user_or_service["user_id"]
     
     # Check user quota
     used_bytes, quota_bytes = storage_manager.check_user_quota(user_id)
@@ -130,10 +143,23 @@ async def upload_part(
 async def complete_upload(
     request: CompleteUploadRequest,
     http_request: Request,
-    user: Dict[str, Any] = Depends(get_current_user)
+    user_or_service: Optional[Dict[str, Any]] = Depends(get_auth_user_or_service)
 ):
     """Complete an upload and finalize the file."""
-    user_id = user["user_id"]
+    
+    # Handle both user and service authentication
+    if user_or_service is None:
+        # Service authentication - get user_id from request metadata
+        if not request.meta or 'user_id' not in request.meta:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Service authentication requires user_id in metadata"
+            )
+        user_id = request.meta['user_id']
+    else:
+        # User authentication - use authenticated user's ID
+        user_id = user_or_service["user_id"]
+        
     client_ip = http_request.client.host if http_request.client else "unknown"
     
     # Generate file key with folder support
@@ -577,6 +603,7 @@ async def generate_jwt_token(
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="JWT private key not accessible"
+            )
         
         # Create JWT payload
         now = datetime.datetime.utcnow()
