@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  file-server:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+      - ./logs:/app/services/upload/logs
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./storage:/var/www/storage:ro
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - file-server
+    restart: unless-stopped
