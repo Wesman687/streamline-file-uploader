@@ -22,11 +22,8 @@ services:
     volumes:
       - ./storage:/app/storage
       - ./logs:/app/services/upload/logs
-    environment:
-      - PORT=8000
-      - PYTHONPATH=/app/services/upload
-      - LOG_DIR=/app/services/upload/logs
-      - UPLOAD_ROOT=/app
+    env_file:
+      - .env.docker
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
@@ -46,6 +43,18 @@ services:
     depends_on:
       - file-server
     restart: unless-stopped
+EOF
+
+# Create .env file with all required configuration
+echo "Creating .env.docker file..."
+cat > .env.docker << 'EOF'
+# Stream-Line File Server Environment Configuration
+PORT=8000
+PYTHONPATH=/app/services/upload
+UPLOAD_ROOT=/app
+LOG_DIR=/app/services/upload/logs
+AUTH_SERVICE_TOKEN=ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
+UPLOAD_SIGNING_KEY=production-signing-key-for-docker
 EOF
 
 # Update Dockerfile to fix Python path
@@ -86,6 +95,8 @@ ENV PYTHONPATH=/app/services/upload
 # Set application environment variables
 ENV LOG_DIR=/app/services/upload/logs
 ENV UPLOAD_ROOT=/app
+ENV AUTH_SERVICE_TOKEN=ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
+ENV UPLOAD_SIGNING_KEY=production-signing-key-for-docker
 
 # Expose port
 EXPOSE 8000

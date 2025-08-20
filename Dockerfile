@@ -29,10 +29,11 @@ USER streamline
 
 # Set Python path so imports work correctly
 ENV PYTHONPATH=/app/services/upload
-# Set log directory for the application
+# Set application environment variables
 ENV LOG_DIR=/app/services/upload/logs
-# Set upload root for file storage
 ENV UPLOAD_ROOT=/app
+ENV AUTH_SERVICE_TOKEN=ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
+ENV UPLOAD_SIGNING_KEY=production-signing-key-for-docker
 
 # Expose port
 EXPOSE 8000
@@ -43,4 +44,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Start the server from the correct directory
 WORKDIR /app/services/upload
-CMD ["python", "app/main.py"]
+
+# Add startup validation (optional - can be disabled by setting SKIP_VALIDATION=1)
+RUN echo '#!/bin/bash\nif [ "$SKIP_VALIDATION" != "1" ]; then\n  python /app/validate_config.py\nfi\npython app/main.py\n' > start.sh && chmod +x start.sh
+
+CMD ["./start.sh"]

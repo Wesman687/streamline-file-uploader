@@ -77,6 +77,7 @@ cd /opt/streamline-docker
 print_step "Downloading configuration files..."
 curl -s https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker-compose.yml > docker-compose.yml
 curl -s https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/Dockerfile > Dockerfile
+curl -s https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/.env.docker > .env.docker
 
 # Also download the requirements.txt file for the build
 mkdir -p services/upload

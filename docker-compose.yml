@@ -6,11 +6,8 @@ services:
     volumes:
       - ./storage:/app/storage
       - ./logs:/app/services/upload/logs
-    environment:
-      - PORT=8000
-      - PYTHONPATH=/app/services/upload
-      - LOG_DIR=/app/services/upload/logs
-      - UPLOAD_ROOT=/app
+    env_file:
+      - .env.docker
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]

@@ -9,9 +9,13 @@ from urllib.parse import quote
 
 class URLSigner:
     def __init__(self):
-        self.signing_key = os.getenv("UPLOAD_SIGNING_KEY")
-        if not self.signing_key:
-            raise ValueError("UPLOAD_SIGNING_KEY environment variable is required")
+        # Use default signing key if not provided - this allows basic functionality
+        self.signing_key = os.getenv("UPLOAD_SIGNING_KEY", "default-signing-key-change-in-production")
+        if self.signing_key == "default-signing-key-change-in-production":
+            # Log warning about using default key
+            import logging
+            logger = logging.getLogger('server')
+            logger.warning("Using default UPLOAD_SIGNING_KEY - set UPLOAD_SIGNING_KEY environment variable for production")
         
         self.signing_key_bytes = self.signing_key.encode('utf-8')
         self.default_ttl = int(os.getenv("SIGNED_URL_TTL_DEFAULT", "3600"))
