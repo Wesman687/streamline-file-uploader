@@ -6,9 +6,17 @@ from pathlib import Path
 def setup_logging():
     """Configure logging for the upload server with separate log files."""
     
-    # Create logs directory
-    log_dir = Path("/home/ubuntu/file-uploader/services/upload/logs")
-    log_dir.mkdir(exist_ok=True)
+    # Create logs directory - use relative path that works in Docker and regular deployment
+    # First try environment variable, then relative to current directory
+    log_dir_env = os.getenv('LOG_DIR')
+    if log_dir_env:
+        log_dir = Path(log_dir_env)
+    else:
+        # Use relative path from the app directory
+        current_dir = Path(__file__).parent.parent  # Go up from app/logging_config.py to services/upload/
+        log_dir = current_dir / "logs"
+    
+    log_dir.mkdir(exist_ok=True, parents=True)
     
     # Define log files
     server_log = log_dir / "server.log"

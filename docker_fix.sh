@@ -25,6 +25,8 @@ services:
     environment:
       - PORT=8000
       - PYTHONPATH=/app/services/upload
+      - LOG_DIR=/app/services/upload/logs
+      - UPLOAD_ROOT=/app
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
@@ -80,6 +82,10 @@ USER streamline
 
 # Set Python path so imports work correctly
 ENV PYTHONPATH=/app/services/upload
+
+# Set application environment variables
+ENV LOG_DIR=/app/services/upload/logs
+ENV UPLOAD_ROOT=/app
 
 # Expose port
 EXPOSE 8000

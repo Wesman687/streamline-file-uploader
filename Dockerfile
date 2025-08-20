@@ -29,6 +29,10 @@ USER streamline
 
 # Set Python path so imports work correctly
 ENV PYTHONPATH=/app/services/upload
+# Set log directory for the application
+ENV LOG_DIR=/app/services/upload/logs
+# Set upload root for file storage
+ENV UPLOAD_ROOT=/app
 
 # Expose port
 EXPOSE 8000
