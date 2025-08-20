@@ -33,7 +33,7 @@ def validate_environment():
         "UPLOAD_SIGNING_KEY": "default-signing-key-change-in-production",
         "UPLOAD_ROOT": "/app",
         "LOG_DIR": "/app/services/upload/logs",
-        "PORT": "8000",
+        "PORT": "10000",
         "BIND_HOST": "0.0.0.0",
         "PYTHONPATH": "/app/services/upload"
     }
@@ -122,7 +122,7 @@ def validate_environment():
     print("-" * 25)
     
     bind_host = os.getenv("BIND_HOST", "0.0.0.0")
-    port = os.getenv("PORT", "8000")
+    port = os.getenv("PORT", "10000")
     
     if is_docker or bind_host == "0.0.0.0":
         print_status(f"Bind address: {bind_host} (Docker compatible)", "success")

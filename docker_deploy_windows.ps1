@@ -142,7 +142,7 @@ http {
     client_max_body_size 100M;
     
     upstream file-server {
-        server file-server:8000;
+        server file-server:10000;
     }
     
     server {
@@ -200,7 +200,7 @@ Start-Sleep -Seconds 15
 # Test deployment
 Write-Step "Testing deployment..."
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8000/healthz" -UseBasicParsing
+    $response = Invoke-WebRequest -Uri "http://localhost:10000/healthz" -UseBasicParsing
     if ($response.StatusCode -eq 200) {
         Write-Success "File server is running!"
         
@@ -240,7 +240,7 @@ try {
 Write-Step "Creating test script..."
 $testScript = @"
 # Test the file server deployment
-`$response = Invoke-WebRequest -Uri "http://localhost:8000/healthz" -UseBasicParsing
+`$response = Invoke-WebRequest -Uri "http://localhost:10000/healthz" -UseBasicParsing
 if (`$response.StatusCode -eq 200) {
     Write-Host "✅ File server is running!" -ForegroundColor Green
     `$health = `$response.Content | ConvertFrom-Json
@@ -259,7 +259,7 @@ Write-Host ""
 Write-Success "🎉 Windows Docker deployment complete!"
 Write-Host ""
 Write-Host "📋 Access Information:"
-Write-Host "  🌐 File Server: http://localhost:8000"
+Write-Host "  🌐 File Server: http://localhost:10000"
 Write-Host "  🌐 nginx Proxy: http://localhost"
 Write-Host "  📁 Storage: $deployDir\storage"
 Write-Host "  📋 Logs: $deployDir\logs"
@@ -273,7 +273,7 @@ Write-Host "  • Test:    .\test_deployment.ps1"
 Write-Host ""
 Write-Host "🚀 Integration:"
 Write-Host "  • Service Token: ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340"
-Write-Host "  • Base URL: http://localhost:8000"
+Write-Host "  • Base URL: http://localhost:10000"
 Write-Host ""
 Write-Host "📝 Next Steps:"
 Write-Host "  1. Test the deployment: .\test_deployment.ps1"
@@ -287,7 +287,7 @@ Stream-Line File Server - Windows Docker Deployment
 
 Deployed: $(Get-Date)
 Domain: $Domain
-URL: http://localhost:8000
+URL: http://localhost:10000
 nginx Proxy: http://localhost
 
 Service Token: ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
@@ -305,8 +305,8 @@ Docker Commands:
 
 Integration:
 - Use service token for authentication
-- Base URL: http://localhost:8000
-- Files accessible at: http://localhost:8000/storage/user_id/folder/filename
+- Base URL: http://localhost:10000
+- Files accessible at: http://localhost:10000/storage/user_id/folder/filename
 
 Test: .\test_deployment.ps1
 "@

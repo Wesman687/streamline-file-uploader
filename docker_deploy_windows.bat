@@ -109,7 +109,7 @@ echo.
 echo     client_max_body_size 100M;
 echo.    
 echo     upstream file-server {
-echo         server file-server:8000;
+echo         server file-server:10000;
 echo     }
 echo.    
 echo     server {
@@ -163,7 +163,7 @@ timeout /t 15 /nobreak >nul
 
 REM Test deployment
 echo 🔄 Testing deployment...
-powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:8000/healthz' -UseBasicParsing; if ($response.StatusCode -eq 200) { Write-Host '✅ File server is running!' -ForegroundColor Green } else { Write-Host '⚠️ File server responded with status:' $response.StatusCode -ForegroundColor Yellow } } catch { Write-Host '❌ File server is not responding' -ForegroundColor Red; exit 1 }"
+powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:10000/healthz' -UseBasicParsing; if ($response.StatusCode -eq 200) { Write-Host '✅ File server is running!' -ForegroundColor Green } else { Write-Host '⚠️ File server responded with status:' $response.StatusCode -ForegroundColor Yellow } } catch { Write-Host '❌ File server is not responding' -ForegroundColor Red; exit 1 }"
 
 if %errorLevel% neq 0 (
     echo Checking container status...
@@ -180,7 +180,7 @@ echo 🔄 Creating test script...
 (
 echo @echo off
 echo echo Testing file server deployment...
-echo powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:8000/healthz' -UseBasicParsing; if ($response.StatusCode -eq 200) { Write-Host '✅ File server is running!' -ForegroundColor Green; $health = $response.Content | ConvertFrom-Json; Write-Host 'Status:' $health.status; Write-Host 'Free Space:' $health.disk_free_gb 'GB' } else { Write-Host '❌ File server is not responding' -ForegroundColor Red } } catch { Write-Host '❌ File server test failed' -ForegroundColor Red }"
+echo powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:10000/healthz' -UseBasicParsing; if ($response.StatusCode -eq 200) { Write-Host '✅ File server is running!' -ForegroundColor Green; $health = $response.Content | ConvertFrom-Json; Write-Host 'Status:' $health.status; Write-Host 'Free Space:' $health.disk_free_gb 'GB' } else { Write-Host '❌ File server is not responding' -ForegroundColor Red } } catch { Write-Host '❌ File server test failed' -ForegroundColor Red }"
 echo pause
 ) > test_deployment.bat
 echo ✅ Created test script: test_deployment.bat
@@ -196,7 +196,7 @@ echo function Start-Server { docker-compose up -d }
 echo function Restart-Server { docker-compose restart }
 echo function Test-Server { 
 echo     try {
-echo         $response = Invoke-WebRequest -Uri "http://localhost:8000/healthz" -UseBasicParsing
+echo         $response = Invoke-WebRequest -Uri "http://localhost:10000/healthz" -UseBasicParsing
 echo         if ($response.StatusCode -eq 200) {
 echo             Write-Host "✅ File server is running!" -ForegroundColor Green
 echo             $health = $response.Content ^| ConvertFrom-Json
@@ -223,7 +223,7 @@ echo.
 echo ✅ 🎉 Windows Docker deployment complete!
 echo.
 echo 📋 Access Information:
-echo   🌐 File Server: http://localhost:8000
+echo   🌐 File Server: http://localhost:10000
 echo   🌐 nginx Proxy: http://localhost
 echo   📁 Storage: %DEPLOY_DIR%\storage
 echo   📋 Logs: %DEPLOY_DIR%\logs
@@ -238,7 +238,7 @@ echo   • Manage:  powershell -ExecutionPolicy Bypass -File manage.ps1
 echo.
 echo 🚀 Integration:
 echo   • Service Token: ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
-echo   • Base URL: http://localhost:8000
+echo   • Base URL: http://localhost:10000
 echo.
 echo 📝 Next Steps:
 echo   1. Test the deployment: test_deployment.bat
@@ -252,7 +252,7 @@ echo =================================================
 echo.
 echo Deployed: %date% %time%
 echo Domain: localhost
-echo URL: http://localhost:8000
+echo URL: http://localhost:10000
 echo nginx Proxy: http://localhost
 echo.
 echo Service Token: ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
@@ -270,8 +270,8 @@ echo - Restart: docker-compose restart
 echo.
 echo Integration:
 echo - Use service token for authentication
-echo - Base URL: http://localhost:8000
-echo - Files accessible at: http://localhost:8000/storage/user_id/folder/filename
+echo - Base URL: http://localhost:10000
+echo - Files accessible at: http://localhost:10000/storage/user_id/folder/filename
 echo.
 echo Test: test_deployment.bat
 echo Manage: powershell -ExecutionPolicy Bypass -File manage.ps1

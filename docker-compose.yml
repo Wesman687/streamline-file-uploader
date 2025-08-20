@@ -2,7 +2,7 @@ services:
   file-server:
     build: .
     ports:
-      - "8000:8000"
+      - "10000:10000"
     volumes:
       - ./storage:/app/storage
       - ./logs:/app/services/upload/logs
@@ -10,7 +10,7 @@ services:
       - .env.docker
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:10000/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3

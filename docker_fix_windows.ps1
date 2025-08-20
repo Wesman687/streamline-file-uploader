@@ -48,7 +48,7 @@ services:
   file-server:
     build: .
     ports:
-      - "8000:8000"
+      - "10000:10000"
     volumes:
       - ./storage:/app/storage
       - ./logs:/app/services/upload/logs
@@ -56,7 +56,7 @@ services:
       - .env.docker
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:10000/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -88,7 +88,7 @@ UPLOAD_ROOT=/app
 MAX_BODY_MB=5120
 PER_USER_QUOTA_GB=500
 LOG_DIR=/app/services/upload/logs
-PORT=8000
+PORT=10000
 BIND_HOST=0.0.0.0
 PYTHONPATH=/app/services/upload
 "@
@@ -186,12 +186,12 @@ Start-Sleep -Seconds 15
 
 Write-Step "Testing deployment..."
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8000/healthz" -UseBasicParsing
+    $response = Invoke-WebRequest -Uri "http://localhost:10000/healthz" -UseBasicParsing
     if ($response.StatusCode -eq 200) {
         Write-Success "✅ File server is running!"
-        Write-Host "🌐 Access at: http://localhost:8000"
-        Write-Host "📋 Health: http://localhost:8000/healthz"
-        Write-Host "📖 Docs: http://localhost:8000/docs"
+        Write-Host "🌐 Access at: http://localhost:10000"
+        Write-Host "📋 Health: http://localhost:10000/healthz"
+        Write-Host "📖 Docs: http://localhost:10000/docs"
         
         # Parse health response
         $healthData = $response.Content | ConvertFrom-Json
@@ -216,6 +216,6 @@ Write-Host "  • Restart: docker-compose restart"
 Write-Host ""
 Write-Host "🚀 Integration:"
 Write-Host "  • Service Token: ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340"
-Write-Host "  • Base URL: http://localhost:8000"
+Write-Host "  • Base URL: http://localhost:10000"
 Write-Host ""
 Write-Success "🐳 Your Windows Docker file server is fixed and ready! 🎉"

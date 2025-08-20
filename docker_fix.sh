@@ -1,7 +1,19 @@
 #!/bin/bash
 
-# Quick Docker Fix for Stream-Line File Server
-# ============================================
+# Quick Docker Fix for Stream-Line Fi# Create .env file with all required configuration
+echo "Creating .env.docker file..."
+cat > .env.docker << 'EOF'
+# Stream-Line File Server - Docker Configuration
+AUTH_SERVICE_TOKEN=ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
+UPLOAD_SIGNING_KEY=docker-production-signing-key-2025
+UPLOAD_ROOT=/app
+MAX_BODY_MB=5120
+PER_USER_QUOTA_GB=500
+LOG_DIR=/app/services/upload/logs
+PORT=10000
+BIND_HOST=0.0.0.0
+PYTHONPATH=/app/services/upload
+EOF==========================================
 # 
 # Run this in your docker-compose directory to fix the Python path issue
 
@@ -18,7 +30,7 @@ services:
   file-server:
     build: .
     ports:
-      - "8000:8000"
+      - "10000:10000"
     volumes:
       - ./storage:/app/storage
       - ./logs:/app/services/upload/logs
@@ -26,7 +38,7 @@ services:
       - .env.docker
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:10000/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
