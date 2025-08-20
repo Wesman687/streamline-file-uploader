@@ -77,6 +77,167 @@ async def root():
     }
 
 
+# Instructions endpoint
+@app.get("/instructions")
+async def get_instructions(request: Request):
+    """Get integration instructions for developers."""
+    base_url = "https://file-server.stream-lineai.com"  # Your production domain
+    
+    return {
+        "service": "Stream-Line Upload Server",
+        "version": "1.0.0",
+        "description": "File upload and management service for Stream-Line AI applications",
+        "server": "file-server.stream-lineai.com",
+        "base_url": base_url,
+        
+        "🔑 authentication": {
+            "service_token": "ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340",
+            "method": "Bearer Token",
+            "header": "Authorization: Bearer ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340"
+        },
+        
+        "🌐 endpoints": {
+            "health": f"{base_url}/healthz",
+            "instructions": f"{base_url}/instructions",
+            "api_docs": f"{base_url}/docs",
+            "upload": f"{base_url}/api/files/upload/{{user_id}}/{{folder}}",
+            "file_access": f"{base_url}/storage/{{user_id}}/{{folder}}/{{filename}}",
+            "file_list": f"{base_url}/api/files/{{user_id}}/list"
+        },
+        
+        "🚀 quick_start": {
+            "1_download_client": f"curl -o streamline_file_client.py {base_url.replace('file-server', 'raw.githubusercontent.com/Wesman687/streamline-file-uploader/main')}/streamline_file_client.py",
+            
+            "2_python_usage": f'''
+from streamline_file_client import StreamLineFileClient
+
+# Initialize client
+client = StreamLineFileClient(
+    service_token="ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340",
+    base_url="{base_url}"
+)
+
+# Upload file
+result = client.upload_file("user123", "/path/to/file.jpg", "profile_pics")
+print(f"File URL: {{result['public_url']}}")
+# Result: {base_url}/storage/user123/profile_pics/filename.jpg
+
+# List files
+files = client.list_files("user123")
+print(f"User has {{len(files)}} files")
+''',
+            
+            "3_direct_curl": f'''
+# Upload with curl
+curl -X POST "{base_url}/api/files/upload/user123/uploads" \\
+  -H "Authorization: Bearer ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340" \\
+  -F "file=@/path/to/your/file.jpg"
+            
+# Health check
+curl {base_url}/healthz
+''',
+            
+            "4_javascript": f'''
+// Upload file
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+const response = await fetch('{base_url}/api/files/upload/user123/uploads', {{
+    method: 'POST',
+    headers: {{
+        'Authorization': 'Bearer ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340'
+    }},
+    body: formData
+}});
+
+const result = await response.json();
+console.log('File URL:', result.public_url);
+// Display: <img src="{{result.public_url}}" alt="Uploaded" />
+'''
+        },
+        
+        "📁 file_organization": {
+            "pattern": "storage/{user_id}/{folder}/{filename}",
+            "examples": [
+                f"{base_url}/storage/user123/profile_pics/avatar.jpg",
+                f"{base_url}/storage/user123/documents/contract.pdf",
+                f"{base_url}/storage/app1_user456/uploads/screenshot.png",
+                f"{base_url}/storage/customer789/invoices/invoice_2025.pdf"
+            ],
+            "note": "Files are immediately accessible via direct URLs after upload"
+        },
+        
+        "🔧 framework_integration": {
+            "django": f'''
+# settings.py
+FILE_SERVER_URL = "{base_url}"
+FILE_SERVER_TOKEN = "ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340"
+
+# views.py
+from streamline_file_client import StreamLineFileClient
+
+def upload_file(request):
+    client = StreamLineFileClient(settings.FILE_SERVER_TOKEN, settings.FILE_SERVER_URL)
+    result = client.upload_file(request.user.id, request.FILES['file'], 'uploads')
+    return JsonResponse({{'url': result['public_url']}})
+''',
+            
+            "flask": f'''
+from streamline_file_client import StreamLineFileClient
+
+app.config['FILE_SERVER_URL'] = '{base_url}'
+app.config['FILE_SERVER_TOKEN'] = 'ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340'
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    client = StreamLineFileClient(app.config['FILE_SERVER_TOKEN'], app.config['FILE_SERVER_URL'])
+    result = client.upload_file(session['user_id'], request.files['file'], 'uploads')
+    return {{'url': result['public_url']}}
+''',
+            
+            "nodejs_express": f'''
+const FILE_SERVER_URL = '{base_url}';
+const SERVICE_TOKEN = 'ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340';
+
+app.post('/upload', upload.single('file'), async (req, res) => {{
+    const formData = new FormData();
+    formData.append('file', req.file.buffer, req.file.originalname);
+    
+    const response = await axios.post(`${{FILE_SERVER_URL}}/api/files/upload/${{req.user.id}}/uploads`, formData, {{
+        headers: {{
+            'Authorization': `Bearer ${{SERVICE_TOKEN}}`,
+            ...formData.getHeaders()
+        }}
+    }});
+    
+    res.json({{url: response.data.public_url}});
+}});
+'''
+        },
+        
+        "🧪 testing": {
+            "health_check": f"curl {base_url}/healthz",
+            "test_upload": f'curl -X POST "{base_url}/api/files/upload/test_user/test_folder" -H "Authorization: Bearer ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340" -F "file=@test.jpg"',
+            "test_access": f"curl {base_url}/storage/test_user/test_folder/test.jpg"
+        },
+        
+        "📖 documentation": {
+            "interactive_api": f"{base_url}/docs",
+            "openapi_spec": f"{base_url}/openapi.json",
+            "this_endpoint": f"{base_url}/instructions"
+        },
+        
+        "💡 tips": [
+            "Use descriptive folder names for better organization",
+            "User IDs can be anything (user123, app1_user456, customer789, etc.)",
+            "Files are immediately accessible after upload",
+            "Use the /healthz endpoint to check server status",
+            f"Visit {base_url}/docs for interactive API testing",
+            "All uploads require the service token in Authorization header"
+        ]
+    }
+
+
 # Direct file serving from storage paths
 @app.get("/storage/{user_id}/{file_path:path}")
 @app.head("/storage/{user_id}/{file_path:path}")
