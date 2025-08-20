@@ -48,13 +48,20 @@ EOF
 # Create .env file with all required configuration
 echo "Creating .env.docker file..."
 cat > .env.docker << 'EOF'
-# Stream-Line File Server Environment Configuration
-PORT=8000
-PYTHONPATH=/app/services/upload
-UPLOAD_ROOT=/app
-LOG_DIR=/app/services/upload/logs
+# Create .env file with all required configuration
+echo "Creating .env.docker file..."
+cat > .env.docker << 'EOF'
+# Stream-Line File Server - Docker Configuration
 AUTH_SERVICE_TOKEN=ee6d52ece4fa6c4c8836820d2eb7feeb6c78cbf2e2661ef76c9f5a805fc16340
-UPLOAD_SIGNING_KEY=production-signing-key-for-docker
+UPLOAD_SIGNING_KEY=docker-production-signing-key-2025
+UPLOAD_ROOT=/app
+MAX_BODY_MB=5120
+PER_USER_QUOTA_GB=500
+LOG_DIR=/app/services/upload/logs
+PORT=8000
+BIND_HOST=0.0.0.0
+PYTHONPATH=/app/services/upload
+EOF
 EOF
 
 # Update Dockerfile to fix Python path

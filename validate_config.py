@@ -34,6 +34,7 @@ def validate_environment():
         "UPLOAD_ROOT": "/app",
         "LOG_DIR": "/app/services/upload/logs",
         "PORT": "8000",
+        "BIND_HOST": "0.0.0.0",
         "PYTHONPATH": "/app/services/upload"
     }
     
@@ -113,6 +114,24 @@ def validate_environment():
         print_status("JWT public key (base64) configured", "success")
     else:
         print_status("No JWT public key configured - only service token auth available", "warning")
+    
+    # Check if this looks like a Docker environment
+    is_docker = os.path.exists('/.dockerenv') or os.getenv('DOCKER_CONTAINER') == '1'
+    
+    print("\n🐳 Docker Configuration:")
+    print("-" * 25)
+    
+    bind_host = os.getenv("BIND_HOST", "0.0.0.0")
+    port = os.getenv("PORT", "8000")
+    
+    if is_docker or bind_host == "0.0.0.0":
+        print_status(f"Bind address: {bind_host} (Docker compatible)", "success")
+        print_status(f"Port: {port}", "success")
+    elif bind_host == "127.0.0.1":
+        print_status(f"Bind address: {bind_host} (localhost only - may not work in Docker)", "warning")
+        print_status("For Docker deployments, use BIND_HOST=0.0.0.0", "warning")
+    else:
+        print_status(f"Bind address: {bind_host}", "info")
     
     print("\n" + "=" * 55)
     

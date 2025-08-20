@@ -265,8 +265,9 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
     
-    port = int(os.getenv("PORT", "5070"))
-    host = os.getenv("BIND_HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "8000"))
+    # Default to 0.0.0.0 for Docker compatibility, allow override for security
+    host = os.getenv("BIND_HOST", "0.0.0.0")
     
     uvicorn.run(
         "app.main:app",

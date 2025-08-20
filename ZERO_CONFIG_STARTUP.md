@@ -7,10 +7,11 @@ The file server now works **out of the box** with sensible defaults for all requ
 ### 🎯 **What's Been Fixed:**
 
 1. ✅ **Default Environment Variables**: All required vars now have defaults
-2. ✅ **Flexible Path Configuration**: Works in Docker and regular deployments
-3. ✅ **Comprehensive Documentation**: Clear examples and configuration guide
-4. ✅ **Startup Validation**: Automatic configuration checking
-5. ✅ **Docker Pre-configuration**: Complete `.env.docker` with all settings
+2. ✅ **Flexible Path Configuration**: Works in Docker and regular deployments  
+3. ✅ **Docker Network Binding**: Server binds to 0.0.0.0:8000 for nginx connectivity
+4. ✅ **Comprehensive Documentation**: Clear examples and configuration guide
+5. ✅ **Startup Validation**: Automatic configuration checking
+6. ✅ **Docker Pre-configuration**: Complete `.env.docker` with all settings
 
 ---
 
@@ -77,6 +78,7 @@ UPLOAD_SIGNING_KEY=docker-production-signing-key-2025
 UPLOAD_ROOT=/app
 LOG_DIR=/app/services/upload/logs
 PORT=8000
+BIND_HOST=0.0.0.0
 PYTHONPATH=/app/services/upload
 ```
 
@@ -124,6 +126,14 @@ python3 test_file_server.py https://your-server.com
 wget https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker_test.sh
 chmod +x docker_test.sh
 ./docker_test.sh
+```
+
+### 🌐 **Docker Network Test**
+```bash
+# Download and run Docker networking test
+wget https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker_network_test.sh
+chmod +x docker_network_test.sh
+./docker_network_test.sh
 ```
 
 ---
