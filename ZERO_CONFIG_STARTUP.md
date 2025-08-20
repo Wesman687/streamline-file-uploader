@@ -15,9 +15,9 @@ The file server now works **out of the box** with sensible defaults for all requ
 
 ---
 
-## 🚀 **Three Ways to Deploy (All Work Out of the Box)**
+## 🚀 **Four Ways to Deploy (All Work Out of the Box)**
 
-### 1. **One-Click Production Setup** (Recommended)
+### 1. **One-Click Production Setup** (Linux/Ubuntu - Recommended)
 ```bash
 wget https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/one_click_setup.sh
 chmod +x one_click_setup.sh
@@ -25,7 +25,7 @@ sudo ./one_click_setup.sh
 ```
 **Result**: Production server with SSL, nginx, systemd service
 
-### 2. **Docker Deployment** (Quick & Clean)
+### 2. **Docker Deployment** (Linux/macOS)
 ```bash
 wget https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker_deploy.sh
 chmod +x docker_deploy.sh
@@ -33,11 +33,35 @@ sudo ./docker_deploy.sh
 ```
 **Result**: Containerized deployment with pre-configured environment
 
-### 3. **Docker Fix** (If You Have Issues)
+### 3. **Windows Docker Deployment** (Windows 10/11)
+**PowerShell (Recommended):**
+```powershell
+# Open PowerShell as Administrator
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker_deploy_windows.ps1" -OutFile "docker_deploy_windows.ps1"
+.\docker_deploy_windows.ps1
+```
+
+**Command Prompt (Alternative):**
+```cmd
+# Open Command Prompt as Administrator
+curl -o docker_deploy_windows.bat https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker_deploy_windows.bat
+docker_deploy_windows.bat
+```
+**Result**: Windows-optimized Docker deployment with management scripts
+
+### 4. **Docker Fix** (If You Have Issues)
+**Linux/macOS:**
 ```bash
 wget https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker_fix.sh
 chmod +x docker_fix.sh
 ./docker_fix.sh
+```
+
+**Windows:**
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Wesman687/streamline-file-uploader/main/docker_fix_windows.ps1" -OutFile "docker_fix_windows.ps1"
+.\docker_fix_windows.ps1
 ```
 **Result**: Fixes any existing Docker deployment issues
 
