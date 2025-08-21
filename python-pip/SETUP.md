@@ -3,6 +3,8 @@
 ## 1. Install the Package
 
 ```bash
+pip install git+https://github.com/streamline-ai/file-uploader.git
+or
 pip install streamline-file-uploader
 ```
 
