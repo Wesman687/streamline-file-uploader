@@ -49,7 +49,9 @@ class StorageManager:
         
         unique_id = str(uuid4())[:8]
         safe_filename = self._sanitize_filename(filename)
-        return f"{base_path}/{unique_id}_{safe_filename}"
+        final_key = f"{base_path}/{unique_id}_{safe_filename}"
+        
+        return final_key
 
     def _sanitize_filename(self, filename: str) -> str:
         """Sanitize filename for safe storage."""
@@ -133,13 +135,27 @@ class StorageManager:
         
         # Create final file path
         final_path = self.get_file_path(final_key)
+        
+        # ✅ ADD DEBUGGING BEFORE CREATION
+        print(f"🔍 DEBUG: About to create file at {final_path}")
+        print(f"🔍 DEBUG: Parent directory: {final_path.parent}")
+        print(f"🔍 DEBUG: Parent exists before mkdir: {final_path.parent.exists()}")
+        
         final_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # ✅ ADD DEBUGGING AFTER DIRECTORY CREATION
+        print(f"🔍 DEBUG: Parent exists after mkdir: {final_path.parent.exists()}")
+        print(f"🔍 DEBUG: Can write to parent: {os.access(final_path.parent, os.W_OK)}")
         
         # Assemble chunks and calculate SHA256
         sha256_hash = hashlib.sha256()
         
+        # ✅ ADD DEBUGGING BEFORE FILE WRITING
+        print(f"🔍 DEBUG: Starting to write file...")
+        
         async with aiofiles.open(final_path, 'wb') as final_file:
             for part_file in part_files:
+                print(f"🔍 DEBUG: Processing part file: {part_file}")
                 async with aiofiles.open(part_file, 'rb') as part:
                     while True:
                         chunk = await part.read(8192)
@@ -148,8 +164,31 @@ class StorageManager:
                         await final_file.write(chunk)
                         sha256_hash.update(chunk)
         
+        # ✅ ADD DEBUGGING AFTER FILE WRITING
+        print(f"🔍 DEBUG: File writing complete")
+        print(f"🔍 DEBUG: File exists after writing: {final_path.exists()}")
+        print(f"🔍 DEBUG: File size after writing: {final_path.stat().st_size if final_path.exists() else 'N/A'}")
+        
         # Clean up session directory
         shutil.rmtree(session_dir)
+        
+        # ✅ ADD ROBUST FILE CHECK
+        # Ensure the file is actually written to disk
+        if not final_path.exists():
+            raise RuntimeError(f"File was not created at {final_path}")
+        
+        # Force a sync to disk using os.sync() instead
+        os.sync()
+        
+        # Verify file size
+        actual_size = final_path.stat().st_size
+        if actual_size == 0:
+            raise RuntimeError(f"File was created but is empty at {final_path}")
+        
+        # ✅ ADD MORE DEBUGGING
+        print(f"🔍 DEBUG: File successfully created at {final_path}")
+        print(f"🔍 DEBUG: File size: {actual_size} bytes")
+        print(f"🔍 DEBUG: File permissions: {oct(final_path.stat().st_mode)}")
         
         return final_path, sha256_hash.hexdigest()
 

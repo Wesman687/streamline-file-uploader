@@ -41,6 +41,7 @@ class UploadPartRequest(BaseModel):
 
 class CompleteUploadRequest(BaseModel):
     uploadId: str
+    parts: List[Dict[str, str]]  # ✅ ADD THIS: List of parts with data
     sha256: str
     meta: Optional[Dict[str, Any]] = None
 
