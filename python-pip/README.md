@@ -3,6 +3,8 @@
 A Python package that makes it incredibly easy to upload files to your Stream-Line file server with automatic folder organization.
 
 ## 🚀 Quick Start
+Download
+pip install git+https://github.com/streamline-ai/file-uploader.git
 
 ### 1. Install the Package
 ```bash
