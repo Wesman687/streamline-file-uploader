@@ -20,6 +20,7 @@ from .exceptions import (
 )
 from .batch import BatchUploader
 from .file_manager import FileManager
+from .file_lookup import FileLookup
 
 
 class StreamlineFileUploader:
@@ -40,7 +41,7 @@ class StreamlineFileUploader:
         self,
         base_url: Optional[str] = None,
         service_token: Optional[str] = None,
-        default_user: Optional[str] = None,
+        default_user_email: Optional[str] = None,
         timeout: float = 30.0
     ):
         """
@@ -49,12 +50,12 @@ class StreamlineFileUploader:
         Args:
             base_url: File server base URL (defaults to env var UPLOAD_BASE_URL)
             service_token: Service token for authentication (defaults to env var AUTH_SERVICE_TOKEN)
-            default_user: Default user ID for uploads (defaults to env var DEFAULT_USER_ID)
+            default_user_email: Default user email for uploads (defaults to env var DEFAULT_USER_EMAIL)
             timeout: Request timeout in seconds
         """
         self.base_url = base_url or os.getenv("UPLOAD_BASE_URL", "https://file-server.stream-lineai.com")
         self.service_token = service_token or os.getenv("AUTH_SERVICE_TOKEN")
-        self.default_user = default_user or os.getenv("DEFAULT_USER_ID")
+        self.default_user_email = default_user_email or os.getenv("DEFAULT_USER_EMAIL")
         self.timeout = timeout
         
         if not self.service_token:
@@ -65,12 +66,13 @@ class StreamlineFileUploader:
         # Initialize sub-modules
         self.batch = BatchUploader(self)
         self.files = FileManager(self)
+        self.lookup = FileLookup(self.files)
     
     async def upload_file(
         self,
         file_content: Union[bytes, BinaryIO, str, Path],
         filename: str,
-        user_id: Optional[str] = None,
+        user_email: Optional[str] = None,
         options: Optional[UploadOptions] = None,
         **kwargs
     ) -> UploadResult:
@@ -80,7 +82,7 @@ class StreamlineFileUploader:
         Args:
             file_content: File content as bytes, file object, file path, or string path
             filename: Name of the file (will be preserved if options.preserve_filename=True)
-            user_id: User ID for the upload (defaults to default_user)
+            user_email: User email for the upload (defaults to default_user_email)
             options: Upload options (folder, mime_type, metadata, etc.)
             **kwargs: Additional options (folder, mime_type, metadata, preserve_filename)
         
@@ -101,12 +103,12 @@ class StreamlineFileUploader:
             if hasattr(options, key):
                 setattr(options, key, value)
         
-        # Set user ID
-        if user_id is None:
-            user_id = self.default_user
+        # Set user email
+        if user_email is None:
+            user_email = self.default_user_email
         
-        if not user_id:
-            raise ValidationError("user_id is required")
+        if not user_email:
+            raise ValidationError("user_email is required")
         
         # Prepare file content
         file_bytes, actual_filename, mime_type = self._prepare_file_content(
@@ -129,7 +131,7 @@ class StreamlineFileUploader:
                         "mime": mime_type
                     }],
                     "meta": {
-                        "user_id": user_id
+                        "user_id": user_email
                     },
                     "folder": options.folder
                 }
@@ -199,7 +201,7 @@ class StreamlineFileUploader:
             complete_data = complete_response.json()
             
             # Build public URL
-            public_url = f"{self.base_url}/storage/{user_id}"
+            public_url = f"{self.base_url}/storage/{user_email}"
             if options.folder:
                 public_url += f"/{options.folder}"
             public_url += f"/{actual_filename}"

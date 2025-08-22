@@ -16,7 +16,7 @@ class BatchUploader:
     async def upload_files(
         self,
         files: List[Dict[str, Any]],
-        user_id: Optional[str] = None,
+        user_email: Optional[str] = None,
         default_options: Optional[UploadOptions] = None
     ) -> List[UploadResult]:
         """
@@ -28,7 +28,7 @@ class BatchUploader:
                    - 'filename': Name of the file
                    - 'folder': Optional folder path
                    - 'options': Optional UploadOptions for this file
-            user_id: User ID for uploads
+            user_email: User email for uploads
             default_options: Default options for all files
         
         Returns:
@@ -61,7 +61,7 @@ class BatchUploader:
                 result = await self.uploader.upload_file(
                     file_content=content,
                     filename=filename,
-                    user_id=user_id,
+                    user_email=user_email,
                     options=file_options
                 )
                 

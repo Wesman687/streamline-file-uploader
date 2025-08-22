@@ -31,10 +31,10 @@ class FileManager:
             List of file dictionaries
         """
         if user_id is None:
-            user_id = self.uploader.default_user
+            user_id = self.uploader.default_user_email
         
         if not user_id:
-            raise ValidationError("user_id is required")
+            raise ValidationError("user_email is required")
         
         try:
             params = {"user_id": user_id}
