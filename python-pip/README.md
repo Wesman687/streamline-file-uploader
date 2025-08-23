@@ -3,8 +3,6 @@
 A Python package that makes it incredibly easy to upload files to your Stream-Line file server with automatic folder organization.
 
 ## 🚀 Quick Start
-Download
-pip install git+https://github.com/streamline-ai/file-uploader.git
 
 ### 1. Install the Package
 ```bash
@@ -15,7 +13,7 @@ pip install streamline-file-uploader
 ```bash
 export UPLOAD_BASE_URL="https://file-server.stream-lineai.com"
 export AUTH_SERVICE_TOKEN="your-service-token-here"
-export DEFAULT_USER_EMAIL="user@example.com"
+# Note: NO DEFAULT_USER_EMAIL - you'll pass user_email for each upload
 ```
 
 ### 3. Upload a File (3 lines!)
@@ -28,7 +26,8 @@ async def upload():
         result = await uploader.upload_file(
             file_content=b"Hello World!",
             filename="hello.txt",
-            folder="documents"
+            folder="documents",
+            user_email="user@example.com"  # ← REQUIRED: Pass the actual user
         )
         print(f"File uploaded to: {result.public_url}")
 
@@ -144,24 +143,39 @@ from streamline_file_uploader import StreamlineFileUploader
 
 async def main():
     async with StreamlineFileUploader() as uploader:
-        # Upload a video
-        result = await uploader.upload_file(
+        # Upload a video for user1
+        result1 = await uploader.upload_file(
             file_content=open("video.mp4", "rb").read(),
             filename="my_video.mp4",
-            folder="veo/videos"
+            folder="veo/videos",
+            user_email="user1@example.com"  # ← REQUIRED: Pass the actual user
         )
         
-        print(f"✅ Video uploaded!")
-        print(f"   File key: {result.file_key}")
-        print(f"   Public URL: {result.public_url}")
-        print(f"   Size: {result.size} bytes")
+        print(f"✅ Video uploaded for user1!")
+        print(f"   File key: {result1.file_key}")
+        print(f"   Public URL: {result1.public_url}")
+        print(f"   Size: {result1.size} bytes")
         
-        # List all videos
-        videos = await uploader.files.list_files(folder="veo/videos")
-        print(f"📁 Found {len(videos)} videos in veo/videos")
+        # Upload a document for user2
+        result2 = await uploader.upload_file(
+            file_content=open("document.pdf", "rb").read(),
+            filename="report.pdf",
+            folder="documents",
+            user_email="user2@example.com"  # ← REQUIRED: Pass the actual user
+        )
         
-        # Get download URL
-        download_url = await uploader.files.get_download_url(result.file_key)
+        print(f"✅ Document uploaded for user2!")
+        print(f"   File key: {result2.file_key}")
+        
+        # List all videos for user1
+        videos = await uploader.files.list_files(
+            folder="veo/videos",
+            user_email="user1@example.com"  # ← REQUIRED: Pass the actual user
+        )
+        print(f"📁 Found {len(videos)} videos for user1 in veo/videos")
+        
+        # Get download URL for user1's video
+        download_url = await uploader.files.get_download_url(result1.file_key)
         print(f"🔗 Download URL: {download_url}")
 
 if __name__ == "__main__":
@@ -174,15 +188,15 @@ if __name__ == "__main__":
 ```bash
 UPLOAD_BASE_URL=https://file-server.stream-lineai.com
 AUTH_SERVICE_TOKEN=your-service-token
-DEFAULT_USER_ID=user@example.com
+# Note: NO DEFAULT_USER_EMAIL - pass user_email for each upload
 ```
 
 ### Or Pass Parameters Directly
 ```python
 uploader = StreamlineFileUploader(
     base_url="https://file-server.stream-lineai.com",
-    service_token="your-token",
-    default_user="user@example.com"
+    service_token="your-token"
+    # Note: NO default_user_email - pass user_email for each upload
 )
 ```
 

@@ -16,24 +16,27 @@ class BatchUploader:
     async def upload_files(
         self,
         files: List[Dict[str, Any]],
-        user_email: Optional[str] = None,
-        default_options: Optional[UploadOptions] = None
+        user_email: str = None,  # ← REQUIRED: No default, must pass each time
+        options: Optional[UploadOptions] = None
     ) -> List[UploadResult]:
         """
-        Upload multiple files in batch
+        Upload multiple files in batch.
         
         Args:
-            files: List of file dictionaries with:
-                   - 'content': File content (bytes, path, or file object)
-                   - 'filename': Name of the file
-                   - 'folder': Optional folder path
-                   - 'options': Optional UploadOptions for this file
-            user_email: User email for uploads
-            default_options: Default options for all files
-        
+            files: List of file dictionaries with 'content', 'filename', 'folder'
+            user_email: REQUIRED - Email of the user uploading the files
+            options: Default options for all files (can be overridden per file)
+            
         Returns:
             List of UploadResult objects
+            
+        Raises:
+            ValueError: If user_email is not provided
+            UploadError: If any upload fails
         """
+        if not user_email:
+            raise ValueError("user_email is required for batch uploads. Pass the actual user's email address.")
+        
         if not files:
             return []
         
@@ -50,8 +53,8 @@ class BatchUploader:
                 # Merge options
                 if file_options is None:
                     file_options = UploadOptions()
-                if default_options:
-                    for key, value in default_options.dict().items():
+                if options:
+                    for key, value in options.dict().items():
                         if value is not None and getattr(file_options, key) is None:
                             setattr(file_options, key, value)
                 

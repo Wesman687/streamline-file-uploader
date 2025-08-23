@@ -13,7 +13,7 @@ pip install streamline-file-uploader
 ```bash
 export UPLOAD_BASE_URL="https://file-server.stream-lineai.com"
 export AUTH_SERVICE_TOKEN="your-service-token-here"
-export DEFAULT_USER_EMAIL="user@example.com"
+# Note: NO DEFAULT_USER_EMAIL - you'll pass user_email for each upload
 ```
 
 ## 3. Run the Example
@@ -33,7 +33,8 @@ async def upload_file():
         result = await uploader.upload_file(
             file_content=b"Hello World!",
             filename="hello.txt",
-            folder="documents"
+            folder="documents",
+            user_email="user@example.com"  # ← REQUIRED: Pass the actual user
         )
         print(f"File uploaded to: {result.public_url}")
 

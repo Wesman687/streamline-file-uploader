@@ -12,49 +12,52 @@ async def main():
     
     # Set your configuration (or use environment variables)
     service_token = os.getenv("AUTH_SERVICE_TOKEN", "your-service-token-here")
-    user_email = os.getenv("DEFAULT_USER_EMAIL", "user@example.com")
     
     print("🚀 Stream-Line File Uploader Example")
     print("=" * 40)
     
-    # Initialize uploader
+    # Initialize uploader (NO default user - you'll pass user_email for each upload)
     async with StreamlineFileUploader(
-        service_token=service_token,
-        default_user_email=user_email
+        service_token=service_token
     ) as uploader:
         
-        # Upload a simple text file
-        print("\n📝 Uploading a text file...")
+        # Upload a simple text file for user1
+        print("\n📝 Uploading a text file for user1...")
         result = await uploader.upload_file(
             file_content=b"This is a test file uploaded via the Python package!",
             filename="test_document.txt",
-            folder="documents/test"
+            folder="documents/test",
+            user_email="user1@example.com"  # ← REQUIRED: Pass the actual user
         )
         
-        print(f"✅ File uploaded successfully!")
+        print(f"✅ File uploaded successfully for user1!")
         print(f"   File key: {result.file_key}")
         print(f"   Public URL: {result.public_url}")
         print(f"   Size: {result.size} bytes")
         print(f"   Folder: {result.folder}")
         print(f"   Filename: {result.filename}")
         
-        # Upload a video file
-        print("\n🎥 Uploading a video file...")
+        # Upload a video file for user2
+        print("\n🎥 Uploading a video file for user2...")
         video_result = await uploader.upload_file(
             file_content=b"Fake video content for demonstration",
             filename="demo_video.mp4",
-            folder="veo/videos"
+            folder="veo/videos",
+            user_email="user2@example.com"  # ← REQUIRED: Pass the actual user
         )
         
-        print(f"✅ Video uploaded successfully!")
+        print(f"✅ Video uploaded successfully for user2!")
         print(f"   File key: {video_result.file_key}")
         print(f"   Public URL: {video_result.public_url}")
         print(f"   Folder: {video_result.folder}")
         
-        # List files in the veo/videos folder
-        print("\n📁 Listing files in veo/videos folder...")
-        videos = await uploader.files.list_files(folder="veo/videos")
-        print(f"✅ Found {len(videos)} files in veo/videos")
+        # List files in the veo/videos folder for user2
+        print("\n📁 Listing files in veo/videos folder for user2...")
+        videos = await uploader.files.list_files(
+            folder="veo/videos",
+            user_email="user2@example.com"  # ← REQUIRED: Pass the actual user
+        )
+        print(f"✅ Found {len(videos)} files in veo/videos for user2")
         
         # Get download URL for the video
         print("\n🔗 Getting download URL...")

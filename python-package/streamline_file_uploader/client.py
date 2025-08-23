@@ -41,7 +41,6 @@ class StreamlineFileUploader:
         self,
         base_url: Optional[str] = None,
         service_token: Optional[str] = None,
-        default_user_email: Optional[str] = None,
         timeout: float = 30.0
     ):
         """
@@ -50,12 +49,10 @@ class StreamlineFileUploader:
         Args:
             base_url: File server base URL (defaults to env var UPLOAD_BASE_URL)
             service_token: Service token for authentication (defaults to env var AUTH_SERVICE_TOKEN)
-            default_user_email: Default user email for uploads (defaults to env var DEFAULT_USER_EMAIL)
             timeout: Request timeout in seconds
         """
         self.base_url = base_url or os.getenv("UPLOAD_BASE_URL", "https://file-server.stream-lineai.com")
         self.service_token = service_token or os.getenv("AUTH_SERVICE_TOKEN")
-        self.default_user_email = default_user_email or os.getenv("DEFAULT_USER_EMAIL")
         self.timeout = timeout
         
         if not self.service_token:
@@ -183,7 +180,7 @@ class StreamlineFileUploader:
                     "parts": [{"data": file_b64}],
                     "sha256": file_hash,
                     "meta": {
-                        "user_id": user_id,
+                        "user_id": user_email,
                         "folder": options.folder,
                         "filename": actual_filename,
                         **(options.metadata or {})
@@ -284,7 +281,7 @@ class StreamlineFileUploader:
                 result = await self.upload_file(
                     file_content=content,
                     filename=filename,
-                    user_id=user_id,
+                    user_email=user_id,
                     options=file_options
                 )
                 

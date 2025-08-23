@@ -38,8 +38,8 @@ pip install git+https://github.com/YOUR_USERNAME/file-uploader.git
 ### **1. Set Environment Variables**
 ```bash
 export AUTH_SERVICE_TOKEN="your-service-token-here"
-export DEFAULT_USER_EMAIL="user@example.com"
 export UPLOAD_BASE_URL="https://file-server.stream-lineai.com"
+# Note: NO DEFAULT_USER_EMAIL - you'll pass user_email for each upload
 ```
 
 ### **2. Install Dependencies**
@@ -57,9 +57,10 @@ async def main():
         result = await uploader.upload_file(
             file_content=b"Hello World!",
             filename="hello.txt",
-            folder="documents"
+            folder="documents",
+            user_email="user@example.com"  # ← REQUIRED: Pass the actual user
         )
-        print(f"File uploaded: {result.public_url}")
+        print(f"Uploaded: {result.public_url}")
 
 asyncio.run(main())
 ```
