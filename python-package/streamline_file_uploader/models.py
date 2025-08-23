@@ -47,3 +47,4 @@ class UploadResult(BaseModel):
     def file_id(self) -> str:
         """Get the file ID from the file key"""
         return self.file_key.split('/')[-1].split('_', 1)[-1]
+

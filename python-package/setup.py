@@ -50,3 +50,4 @@ setup(
         "Documentation": "https://github.com/streamline-ai/file-uploader#readme",
     },
 )
+

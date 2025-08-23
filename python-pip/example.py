@@ -12,7 +12,7 @@ async def main():
     
     # Set your configuration (or use environment variables)
     service_token = os.getenv("AUTH_SERVICE_TOKEN", "your-service-token-here")
-    user_id = os.getenv("DEFAULT_USER_ID", "user@example.com")
+    user_email = os.getenv("DEFAULT_USER_EMAIL", "user@example.com")
     
     print("🚀 Stream-Line File Uploader Example")
     print("=" * 40)
@@ -20,7 +20,7 @@ async def main():
     # Initialize uploader
     async with StreamlineFileUploader(
         service_token=service_token,
-        default_user=user_id
+        default_user_email=user_email
     ) as uploader:
         
         # Upload a simple text file

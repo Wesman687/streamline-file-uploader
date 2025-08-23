@@ -300,3 +300,4 @@ class FileLookup:
             type_counts[mime_type] = type_counts.get(mime_type, 0) + 1
         
         return type_counts
+

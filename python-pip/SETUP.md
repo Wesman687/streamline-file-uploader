@@ -13,7 +13,7 @@ pip install streamline-file-uploader
 ```bash
 export UPLOAD_BASE_URL="https://file-server.stream-lineai.com"
 export AUTH_SERVICE_TOKEN="your-service-token-here"
-export DEFAULT_USER_ID="user@example.com"
+export DEFAULT_USER_EMAIL="user@example.com"
 ```
 
 ## 3. Run the Example

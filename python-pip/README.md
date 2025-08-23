@@ -15,7 +15,7 @@ pip install streamline-file-uploader
 ```bash
 export UPLOAD_BASE_URL="https://file-server.stream-lineai.com"
 export AUTH_SERVICE_TOKEN="your-service-token-here"
-export DEFAULT_USER_ID="user@example.com"
+export DEFAULT_USER_EMAIL="user@example.com"
 ```
 
 ### 3. Upload a File (3 lines!)
@@ -91,6 +91,33 @@ mp4_files = await uploader.files.search_files(
 # Search by filename
 docs = await uploader.files.search_files(filename_pattern="document")
 ```
+
+## 🔎 Advanced File Lookup
+
+```python
+# Find all video files
+videos = await uploader.lookup.find_video_files(folder="veo/videos")
+
+# Find all image files
+images = await uploader.lookup.find_image_files(folder="images")
+
+# Find all document files
+documents = await uploader.lookup.find_document_files(folder="documents")
+
+# Find large files (>100MB)
+large_files = await uploader.lookup.find_large_files(min_size_mb=100.0)
+
+# Find recent files (last 7 days)
+recent_files = await uploader.lookup.find_recent_files(days=7)
+
+# Find files by extension
+mp4_files = await uploader.lookup.find_files_by_extension("mp4")
+
+# Get file counts by type
+type_counts = await uploader.lookup.get_file_count_by_type()
+print(f"Videos: {type_counts.get('video/mp4', 0)}")
+print(f"Images: {type_counts.get('image/jpeg', 0)}")
+print(f"Documents: {type_counts.get('application/pdf', 0)}")
 
 ## 📥 Download Files
 
