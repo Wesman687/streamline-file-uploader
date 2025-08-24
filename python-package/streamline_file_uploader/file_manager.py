@@ -15,7 +15,7 @@ class FileManager:
     
     async def list_files(
         self,
-        user_id: Optional[str] = None,
+        user_email: str,
         folder: Optional[str] = None,
         limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
@@ -23,21 +23,18 @@ class FileManager:
         List files for a user, optionally filtered by folder
         
         Args:
-            user_id: User ID to list files for
+            user_email: User email to list files for (required)
             folder: Optional folder to filter by
             limit: Optional limit on number of files
         
         Returns:
             List of file dictionaries
         """
-        if user_id is None:
-            user_id = self.uploader.default_user_email
-        
-        if not user_id:
+        if not user_email:
             raise ValidationError("user_email is required")
         
         try:
-            params = {"user_id": user_id}
+            params = {"user_id": user_email}
             if folder:
                 params["folder"] = folder
             
@@ -70,7 +67,7 @@ class FileManager:
     
     async def search_files(
         self,
-        user_id: Optional[str] = None,
+        user_email: str,
         filename_pattern: Optional[str] = None,
         mime_type: Optional[str] = None,
         folder: Optional[str] = None,
@@ -81,7 +78,7 @@ class FileManager:
         Search files by various criteria
         
         Args:
-            user_id: User ID to search for
+            user_email: User email to search for (required)
             filename_pattern: Pattern to match in filename
             mime_type: MIME type filter
             folder: Folder to search in
@@ -91,7 +88,7 @@ class FileManager:
         Returns:
             List of matching files
         """
-        all_files = await self.list_files(user_id=user_id, folder=folder)
+        all_files = await self.list_files(user_email=user_email, folder=folder)
         
         if not all_files:
             return []
@@ -210,7 +207,7 @@ class FileManager:
                 
                 # Search for the file
                 files = await self.search_files(
-                    user_id=user_id,
+                    user_email=user_id, # Changed from user_id to user_email
                     folder=folder,
                     filename_pattern=parts[-1].split('_', 1)[-1] if '_' in parts[-1] else parts[-1]
                 )
@@ -225,18 +222,18 @@ class FileManager:
                 raise
             raise UploadError(f"Error getting file info: {str(e)}", "info")
     
-    async def get_folder_stats(self, user_id: str, folder: str = "") -> Dict[str, Any]:
+    async def get_folder_stats(self, user_email: str, folder: str = "") -> Dict[str, Any]:
         """
         Get statistics for a folder
         
         Args:
-            user_id: User ID
+            user_email: User email (required)
             folder: Folder path (empty for root)
         
         Returns:
             Dictionary with folder statistics
         """
-        files = await self.list_files(user_id=user_id, folder=folder)
+        files = await self.list_files(user_email=user_email, folder=folder)
         
         if not files:
             return {

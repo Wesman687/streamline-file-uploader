@@ -62,8 +62,8 @@ class StreamlineFileUploader:
         
         # Initialize sub-modules
         self.batch = BatchUploader(self)
-        self.files = FileManager(self)
-        self.lookup = FileLookup(self.files)
+        self.file_manager = FileManager(self)
+        self.lookup = FileLookup(self.file_manager)
     
     async def upload_file(
         self,
@@ -101,9 +101,6 @@ class StreamlineFileUploader:
                 setattr(options, key, value)
         
         # Set user email
-        if user_email is None:
-            user_email = self.default_user_email
-        
         if not user_email:
             raise ValidationError("user_email is required")
         
@@ -229,7 +226,7 @@ class StreamlineFileUploader:
     async def upload_files(
         self,
         files: List[Dict[str, Union[bytes, BinaryIO, str, Path]]],
-        user_id: Optional[str] = None,
+        user_email: str,
         default_options: Optional[UploadOptions] = None
     ) -> List[UploadResult]:
         """
@@ -241,7 +238,7 @@ class StreamlineFileUploader:
                    - 'filename': Name of the file
                    - 'folder': Optional folder path
                    - 'options': Optional UploadOptions for this file
-            user_id: User ID for the uploads (defaults to default_user)
+            user_email: User email for the uploads (required)
             default_options: Default options applied to all files
         
         Returns:
@@ -281,7 +278,7 @@ class StreamlineFileUploader:
                 result = await self.upload_file(
                     file_content=content,
                     filename=filename,
-                    user_email=user_id,
+                    user_email=user_email,
                     options=file_options
                 )
                 
@@ -302,7 +299,7 @@ class StreamlineFileUploader:
     
     async def list_files(
         self,
-        user_id: Optional[str] = None,
+        user_email: str,
         folder: Optional[str] = None,
         limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
@@ -310,21 +307,18 @@ class StreamlineFileUploader:
         List files for a user, optionally filtered by folder
         
         Args:
-            user_id: User ID to list files for (defaults to default_user)
+            user_email: User email to list files for (required)
             folder: Optional folder to filter by
             limit: Optional limit on number of files returned
         
         Returns:
             List of file dictionaries with metadata
         """
-        if user_id is None:
-            user_id = self.default_user
-        
-        if not user_id:
-            raise ValidationError("user_id is required")
+        if not user_email:
+            raise ValidationError("user_email is required")
         
         try:
-            params = {"user_id": user_id}
+            params = {"user_id": user_email}
             if folder:
                 params["folder"] = folder
             
@@ -360,7 +354,7 @@ class StreamlineFileUploader:
     
     async def search_files(
         self,
-        user_id: Optional[str] = None,
+        user_email: str,
         filename_pattern: Optional[str] = None,
         mime_type: Optional[str] = None,
         folder: Optional[str] = None,
@@ -371,9 +365,9 @@ class StreamlineFileUploader:
         Search files by various criteria
         
         Args:
-            user_id: User ID to search files for (defaults to default_user)
+            user_email: User email to search for (required)
             filename_pattern: Pattern to match in filename
-            mime_type: MIME type to filter by
+            mime_type: MIME type filter
             folder: Folder to search in
             min_size: Minimum file size in bytes
             max_size: Maximum file size in bytes
@@ -381,8 +375,7 @@ class StreamlineFileUploader:
         Returns:
             List of matching files
         """
-        # Get all files first
-        all_files = await self.list_files(user_id=user_id, folder=folder)
+        all_files = await self.list_files(user_email=user_email, folder=folder)
         
         if not all_files:
             return []
@@ -433,7 +426,7 @@ class StreamlineFileUploader:
                 
                 # Search for the file
                 files = await self.search_files(
-                    user_id=user_id,
+                    user_email=user_id,
                     folder=folder,
                     filename_pattern=parts[-1].split('_', 1)[-1] if '_' in parts[-1] else parts[-1]
                 )
@@ -575,7 +568,7 @@ class StreamlineFileUploader:
         limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Convenience method for listing files"""
-        return await self.files.list_files(user_id, folder, limit)
+        return await self.file_manager.list_files(user_id, folder, limit)
     
     async def search_files(
         self,
@@ -587,21 +580,34 @@ class StreamlineFileUploader:
         max_size: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Convenience method for searching files"""
-        return await self.files.search_files(
+        return await self.file_manager.search_files(
             user_id, filename_pattern, mime_type, folder, min_size, max_size
         )
     
     async def get_download_url(self, file_key: str, expires_in: int = 3600) -> str:
         """Convenience method for getting download URLs"""
-        return await self.files.get_download_url(file_key, expires_in)
+        return await self.file_manager.get_download_url(file_key, expires_in)
     
     async def get_file_info(self, file_key: str) -> Dict[str, Any]:
         """Convenience method for getting file info"""
-        return await self.files.get_file_info(file_key)
+        return await self.file_manager.get_file_info(file_key)
     
-    async def get_folder_stats(self, user_id: str, folder: str = "") -> Dict[str, Any]:
-        """Convenience method for getting folder statistics"""
-        return await self.files.get_folder_stats(user_id, folder)
+    async def get_folder_stats(self, user_email: str, folder: str = "") -> Dict[str, Any]:
+        """
+        Get statistics for a folder
+        
+        Args:
+            user_email: User email (required)
+            folder: Folder path (empty for root)
+        
+        Returns:
+            Dictionary with folder statistics
+        """
+        return await self.file_manager.get_folder_stats(user_email, folder)
+    
+    async def delete_file(self, file_key: str) -> Dict[str, Any]:
+        """Convenience method for deleting files"""
+        return await self.file_manager.delete_file(file_key)
     
     async def close(self):
         """Close the HTTP client"""

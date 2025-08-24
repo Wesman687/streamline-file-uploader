@@ -35,15 +35,15 @@ from streamline_file_uploader import StreamlineFileUploader
 async def main():
     # Initialize uploader
     uploader = StreamlineFileUploader(
-        service_token="your-service-token",
-        default_user="user@example.com"
+        service_token="your-service-token"
     )
     
-    # Upload a file
+    # Upload a file (user_email is always required)
     result = await uploader.upload_file(
         file_content=b"Hello, World!",
         filename="hello.txt",
-        folder="documents"
+        folder="documents",
+        user_email="user@example.com"
     )
     
     print(f"File uploaded: {result.public_url}")
@@ -62,7 +62,6 @@ Set these environment variables for easy configuration:
 ```bash
 export UPLOAD_BASE_URL="https://file-server.stream-lineai.com"
 export AUTH_SERVICE_TOKEN="your-service-token"
-export DEFAULT_USER_ID="user@example.com"
 ```
 
 Then use the uploader without parameters:
@@ -79,14 +78,15 @@ result = await uploader.upload_file(
     file_content=video_bytes,
     filename="my_video.mp4",
     folder="veo/videos",
-    user_id="user@example.com"
+    user_email="user@example.com"
 )
 
 # Upload to documents/invoices folder
 result = await uploader.upload_file(
     file_content=invoice_bytes,
     filename="invoice_2024.pdf",
-    folder="documents/invoices"
+    folder="documents/invoices",
+    user_email="user@example.com"
 )
 ```
 
@@ -280,12 +280,12 @@ async def manage_files():
         file_manager = uploader.file_manager
         
         # List all files for a user
-        files = await file_manager.list_files(user_id="user@example.com")
+        files = await file_manager.list_files(user_email="user@example.com")
         print(f"User has {len(files)} files")
         
         # Search for specific files
         videos = await file_manager.search_files(
-            user_id="user@example.com",
+            user_email="user@example.com",
             folder="veo/videos",
             mime_type="video/*"
         )
@@ -299,7 +299,7 @@ async def manage_files():
         
         # Get folder statistics
         stats = await file_manager.get_folder_stats(
-            user_id="user@example.com",
+            user_email="user@example.com",
             folder="documents"
         )
         print(f"Documents folder: {stats['file_count']} files, {stats['total_size']} bytes")
@@ -340,7 +340,7 @@ async def upload_video(video_path: str, user_id: str):
             file_content=video_path,
             filename=Path(video_path).name,
             folder="veo/videos",
-            user_id=user_id
+            user_email=user_id
         )
         return result
 
@@ -360,7 +360,7 @@ async def upload_multiple_files(files: list, user_id: str):
                 file_content=file_path,
                 filename=Path(file_path).name,
                 folder="documents",
-                user_id=user_id
+                user_email=user_id
             )
             results.append(result)
         return results
@@ -389,7 +389,7 @@ async def upload_with_metadata(file_content: bytes, filename: str, user_id: str)
             file_content=file_content,
             filename=filename,
             options=options,
-            user_id=user_id
+            user_email=user_id
         )
         return result
 ```
