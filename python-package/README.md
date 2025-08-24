@@ -21,7 +21,7 @@ A simple, powerful Python package for uploading files to the Stream-Line file se
 ## 📦 Installation
 
 ```bash
-pip install streamline-file-uploader
+pip install git+https://github.com/Wesman687/streamline-file-uploader.git#subdirectory=python-package
 ```
 
 ## 🔧 Quick Start
