@@ -159,6 +159,38 @@ class FileManager:
                 e.response.text
             )
     
+    async def delete_file(self, file_key: str) -> Dict[str, Any]:
+        """
+        Delete a file from the file server
+        
+        Args:
+            file_key: The file key to delete
+        
+        Returns:
+            Dictionary with deletion status
+        """
+        try:
+            response = await self.uploader.client.delete(
+                f"{self.uploader.base_url}/v1/files/{file_key}",
+                headers={"X-Service-Token": self.uploader.service_token}
+            )
+            
+            if response.status_code != 200:
+                raise FileServerError(
+                    "Failed to delete file",
+                    response.status_code,
+                    response.text
+                )
+            
+            return response.json()
+            
+        except httpx.HTTPStatusError as e:
+            raise FileServerError(
+                f"HTTP error deleting file: {e.response.status_code}",
+                e.response.status_code,
+                e.response.text
+            )
+
     async def get_file_info(self, file_key: str) -> Dict[str, Any]:
         """
         Get detailed information about a specific file

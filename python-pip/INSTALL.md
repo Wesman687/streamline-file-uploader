@@ -25,10 +25,10 @@ cd /path/to/file-uploader/python-package
 pip install -e .
 ```
 
-## **Option 3: Install from GitHub (When Available)**
+## **Option 3: Install from GitHub (Recommended)**
 
 ```bash
-pip install git+https://github.com/YOUR_USERNAME/file-uploader.git
+pip install git+https://github.com/Wesman687/streamline-file-uploader.git#subdirectory=python-package
 ```
 
 ---

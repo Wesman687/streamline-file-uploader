@@ -39,3 +39,4 @@ class QuotaExceededError(StreamlineFileUploaderError):
     """Raised when user quota is exceeded"""
     pass
 
+

@@ -15,6 +15,7 @@ A simple, powerful Python package for uploading files to the Stream-Line file se
 - **Batch uploads**: Upload multiple files at once
 - **File search**: Find files by filename, type, size, or folder
 - **File management**: List, search, and get download URLs
+- **File deletion**: Delete files from the server
 - **Folder statistics**: Get file counts and size information
 
 ## 📦 Installation
@@ -200,6 +201,108 @@ class UploadResult:
     # Properties
     download_url: str    # Direct download URL
     file_id: str         # File ID extracted from file key
+```
+
+## 📁 File Management
+
+The package provides comprehensive file management capabilities through the `FileManager` class:
+
+### FileManager Methods
+
+#### list_files()
+```python
+async def list_files(
+    self,
+    user_id: Optional[str] = None,
+    folder: Optional[str] = None,
+    limit: Optional[int] = None
+) -> List[Dict[str, Any]]
+```
+
+List files for a user, optionally filtered by folder.
+
+#### search_files()
+```python
+async def search_files(
+    self,
+    user_id: Optional[str] = None,
+    filename_pattern: Optional[str] = None,
+    mime_type: Optional[str] = None,
+    folder: Optional[str] = None,
+    min_size: Optional[int] = None,
+    max_size: Optional[int] = None
+) -> List[Dict[str, Any]]
+```
+
+Search files by various criteria including filename pattern, MIME type, folder, and size.
+
+#### delete_file()
+```python
+async def delete_file(self, file_key: str) -> Dict[str, Any]
+```
+
+Delete a file from the file server. Returns deletion status.
+
+#### get_download_url()
+```python
+async def get_download_url(
+    self,
+    file_key: str,
+    expires_in: int = 3600
+) -> str
+```
+
+Get a signed download URL for a file that expires after the specified time.
+
+#### get_file_info()
+```python
+async def get_file_info(self, file_key: str) -> Dict[str, Any]
+```
+
+Get detailed information about a specific file.
+
+#### get_folder_stats()
+```python
+async def get_folder_stats(
+    self,
+    user_id: str,
+    folder: str = ""
+) -> Dict[str, Any]
+```
+
+Get statistics for a folder including file count, total size, and MIME type distribution.
+
+### File Management Examples
+
+```python
+async def manage_files():
+    async with StreamlineFileUploader() as uploader:
+        file_manager = uploader.file_manager
+        
+        # List all files for a user
+        files = await file_manager.list_files(user_id="user@example.com")
+        print(f"User has {len(files)} files")
+        
+        # Search for specific files
+        videos = await file_manager.search_files(
+            user_id="user@example.com",
+            folder="veo/videos",
+            mime_type="video/*"
+        )
+        print(f"Found {len(videos)} video files")
+        
+        # Delete a file
+        if files:
+            file_to_delete = files[0]["file_key"]
+            result = await file_manager.delete_file(file_to_delete)
+            print(f"File deleted: {result}")
+        
+        # Get folder statistics
+        stats = await file_manager.get_folder_stats(
+            user_id="user@example.com",
+            folder="documents"
+        )
+        print(f"Documents folder: {stats['file_count']} files, {stats['total_size']} bytes")
 ```
 
 ## 🚨 Error Handling

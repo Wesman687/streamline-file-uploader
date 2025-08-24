@@ -1,0 +1,189 @@
+# FIXED UPLOAD CODE - Copy/Paste This
+
+# Add this import at the top of your file:
+import hashlib
+
+# Replace your FileServerService.upload_file_to_stream_line method with this:
+
+@staticmethod
+async def upload_file_to_stream_line(user_email: str, file_data: bytes, filename: str, mime_type: str, folder: str = None):
+    """Upload a file to Stream-Line file server using SDK or fallback to legacy API"""
+    try:
+        if SDK_AVAILABLE:
+            # Use the new SDK
+            logger.info(f"🚀 Using StreamlineFileUploader SDK for {filename}")
+            try:
+                async with StreamlineFileUploader(
+                    base_url=config.UPLOAD_BASE_URL,
+                    service_token=config.AUTH_SERVICE_TOKEN
+                ) as uploader:
+                    result = await uploader.upload_file(
+                        file_content=file_data,
+                        filename=filename,
+                        folder=folder or "uploads",
+                        user_email=user_email
+                    )
+                    
+                    # ✅ FIXED: Use the correct result object structure
+                    logger.info(f"✅ SDK upload successful: {result.file_key}")
+                    return {
+                        "success": True,
+                        "file_key": result.file_key,
+                        "public_url": result.public_url,
+                        "file_id": result.file_key  # Use file_key as file_id
+                    }
+                            
+            except Exception as sdk_error:
+                logger.error(f"❌ SDK error: {sdk_error}, falling back to legacy")
+                return await FileServerService._legacy_upload(user_email, file_data, filename, mime_type, folder)
+        else:
+            # Fallback to legacy implementation
+            logger.info(f"🔄 Using legacy upload for {filename}")
+            return await FileServerService._legacy_upload(user_email, file_data, filename, mime_type, folder)
+            
+    except Exception as e:
+        logger.error(f"Upload to Stream-Line failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+# Replace your FileServerService._legacy_upload method with this:
+
+@staticmethod
+async def _legacy_upload(user_email: str, file_data: bytes, filename: str, mime_type: str, folder: str = None):
+    """Legacy upload implementation for fallback"""
+    try:
+        # Step 1: Initialize upload
+        init_data = {
+            "mode": "single",
+            "files": [{
+                "name": filename,
+                "size": len(file_data),
+                "mime": mime_type
+            }],
+            "meta": {
+                "user_email": user_email,
+                "user_id": user_email  # ✅ FIXED: Add user_id
+            }
+        }
+        
+        if folder:
+            init_data["folder"] = folder
+        
+        response = requests.post(
+            f"{FILE_SERVER_BASE_URL}/v1/files/init",
+            headers={
+                "X-Service-Token": SERVICE_TOKEN,
+                "Content-Type": "application/json"
+            },
+            json=init_data
+        )
+        
+        if response.status_code != 200:
+            logger.error(f"File server init failed: {response.status_code} - {response.text}")
+            raise Exception(f"File server init failed: {response.status_code}")
+        
+        upload_session = response.json()
+        upload_id = upload_session["uploadId"]
+        
+        # Step 2: Upload the file data
+        file_b64 = base64.b64encode(file_data).decode('utf-8')
+        
+        # ✅ FIXED: Add required fields
+        complete_data = {
+            "uploadId": upload_id,
+            "parts": [{"partNumber": 1, "data": file_b64}],  # ✅ FIXED: Add partNumber
+            "meta": {
+                "user_email": user_email,
+                "user_id": user_email  # ✅ FIXED: Add user_id
+            },
+            "folder": folder,
+            "sha256": hashlib.sha256(file_data).hexdigest()  # ✅ FIXED: Add sha256
+        }
+        
+        response = requests.post(
+            f"{FILE_SERVER_BASE_URL}/v1/files/complete",
+            headers={
+                "X-Service-Token": SERVICE_TOKEN,
+                "Content-Type": "application/json"
+            },
+            json=complete_data
+        )
+        
+        if response.status_code != 200:
+            logger.error(f"File server complete failed: {response.status_code} - {response.text}")
+            raise Exception(f"File server complete failed: {response.status_code}")
+        
+        result = response.json()
+        
+        # Generate public URL based on folder structure
+        if folder:
+            public_url = f"{FILE_SERVER_BASE_URL}/storage/{user_email}/{folder}/{result['fileKey'].split('_', 1)[1]}"
+        else:
+            public_url = f"{FILE_SERVER_BASE_URL}/storage/{user_email}/{result['fileKey'].split('_', 1)[1]}"
+        
+        return {
+            "file_key": result["fileKey"],
+            "public_url": public_url,
+            "success": True
+        }
+        
+    except Exception as e:
+        logger.error(f"Legacy upload failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+# In your upload endpoints, keep the access_email field as you added it:
+
+file_upload = FileUpload(
+    user_id=current_user.get('user_id'),
+    customer_id=current_user.get('user_id') if current_user.get('user_type') == 'customer' else None,
+    job_id=job_id,
+    file_key=file_server_result["file_key"],
+    filename=file_server_result["file_key"].split('_', 1)[1] if '_' in file_server_result["file_key"] else file_server_result["file_key"],
+    original_filename=file.filename,
+    file_size=len(file_data),
+    mime_type=file.content_type or "application/octet-stream",
+    upload_type=upload_type,
+    description=description,
+    tags=tags,
+    file_server_url=file_server_result["public_url"],
+    folder=folder,
+    access_email=current_user.get('email')  # ✅ Keep this as you added it
+)
+
+# SUMMARY OF FIXES:
+# 1. Added import hashlib
+# 2. Fixed SDK result object structure (removed .success, .file_id checks)
+# 3. Fixed legacy upload to include partNumber, user_id, and sha256
+# 4. Removed duplicate try-catch blocks
+# 5. Kept your access_email field addition
+
+# ✅ SERVER FIXED: The file server now accepts user_email parameter!
+# You can now use either user_email or user_id in your requests
+
+# Also fix the get_user_files method:
+
+@staticmethod
+async def get_user_files(user_email: str, folder: str = None):
+    """Get all files for a user from the file server"""
+    try:
+        # ✅ FIXED: File server now accepts user_email parameter
+        params = {"user_email": user_email}  # ← Now works with user_email!
+        if folder:
+            params["folder"] = folder
+        
+        response = requests.get(
+            f"{FILE_SERVER_BASE_URL}/v1/files/all",
+            headers={
+                "X-Service-Token": SERVICE_TOKEN
+            },
+            params=params
+        )
+        
+        if response.status_code != 200:
+            logger.error(f"File server list failed: {response.status_code} - {response.text}")
+            return {"success": False, "error": f"File server list failed: {response.status_code}"}
+        
+        return {"success": True, "data": response.json()}
+        
+    except Exception as e:
+        logger.error(f"Error getting user files: {str(e)}")
+        return {"success": False, "error": str(e)}

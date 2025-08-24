@@ -6,7 +6,7 @@ A Python package that makes it incredibly easy to upload files to your Stream-Li
 
 ### 1. Install the Package
 ```bash
-pip install streamline-file-uploader
+pip install git+https://github.com/Wesman687/streamline-file-uploader.git#subdirectory=python-package
 ```
 
 ### 2. Set Environment Variables

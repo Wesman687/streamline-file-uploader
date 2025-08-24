@@ -3,9 +3,7 @@
 ## 1. Install the Package
 
 ```bash
-pip install git+https://github.com/streamline-ai/file-uploader.git
-or
-pip install streamline-file-uploader
+pip install git+https://github.com/Wesman687/streamline-file-uploader.git#subdirectory=python-package
 ```
 
 ## 2. Set Environment Variables

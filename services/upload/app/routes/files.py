@@ -56,13 +56,20 @@ async def init_upload(
     
     # Handle both user and service authentication
     if user_or_service is None:
-        # Service authentication - get user_id from request metadata
-        if not request.meta or 'user_id' not in request.meta:
+        # Service authentication - get user_id or user_email from request metadata
+        if not request.meta:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Service authentication requires user_id in metadata"
+                detail="Service authentication requires metadata with user_id or user_email"
             )
-        user_id = request.meta['user_id']
+        
+        # Accept either user_id or user_email for backward compatibility
+        user_id = request.meta.get('user_id') or request.meta.get('user_email')
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Service authentication requires user_id or user_email in metadata"
+            )
     else:
         # User authentication - use authenticated user's ID
         user_id = user_or_service["user_id"]
@@ -151,13 +158,20 @@ async def complete_upload(
     
     # Handle both user and service authentication
     if user_or_service is None:
-        # Service authentication - get user_id from request metadata
-        if not request.meta or 'user_id' not in request.meta:
+        # Service authentication - get user_id or user_email from request metadata
+        if not request.meta:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Service authentication requires user_id in metadata"
+                detail="Service authentication requires metadata with user_id or user_email"
             )
-        user_id = request.meta['user_id']
+        
+        # Accept either user_id or user_email for backward compatibility
+        user_id = request.meta.get('user_id') or request.meta.get('user_email')
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Service authentication requires user_id or user_email in metadata"
+            )
     else:
         # User authentication - use authenticated user's ID
         user_id = user_or_service["user_id"]
@@ -291,23 +305,24 @@ async def get_signed_url(
 async def list_all_files(
     request: Request,
     folder: Optional[str] = None,
-    user_id: Optional[str] = None,
+    user_email: Optional[str] = None,
+    user_id: Optional[str] = None,  # Keep for backward compatibility
     user_or_service: Optional[Dict[str, Any]] = Depends(get_auth_user_or_service)
 ):
     """List all files for the authenticated user, optionally filtered by folder."""
     # Determine the user_id to use
     if user_or_service is None:
-        # Service authentication - use provided user_id
-        if not user_id:
+        # Service authentication - use provided user_email or user_id
+        if not user_email and not user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Service authentication requires user_id parameter"
+                detail="Service authentication requires user_email parameter"
             )
-        effective_user_id = user_id
+        effective_user_id = user_email or user_id
     else:
         # User authentication - use authenticated user's ID
         effective_user_id = user_or_service["user_id"]
-        # Ignore any provided user_id parameter for security
+        # Ignore any provided user_id/user_email parameters for security
     
     # Log the file listing request
     client_ip = get_client_ip(request)
