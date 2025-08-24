@@ -154,14 +154,14 @@ StreamlineFileUploader(
 ##### upload_file()
 
 ```python
-async def upload_file(
-    self,
-    file_content: Union[bytes, BinaryIO, str, Path],
-    filename: str,
-    user_id: Optional[str] = None,
-    options: Optional[UploadOptions] = None,
-    **kwargs
-) -> UploadResult
+    async def upload_file(
+        self,
+        file_content: Union[bytes, BinaryIO, str, Path],
+        filename: str,
+        user_email: str,
+        options: Optional[UploadOptions] = None,
+        **kwargs
+    ) -> UploadResult
 ```
 
 Upload a file to the Stream-Line file server.
@@ -169,7 +169,7 @@ Upload a file to the Stream-Line file server.
 **Parameters:**
 - `file_content`: File content as bytes, file object, file path, or string path
 - `filename`: Name of the file
-- `user_id`: User ID for the upload (defaults to default_user)
+- `user_email`: User email for the upload (required)
 - `options`: Upload options object
 - `**kwargs`: Additional options (folder, mime_type, metadata, preserve_filename)
 
@@ -213,7 +213,7 @@ The package provides comprehensive file management capabilities through the `Fil
 ```python
 async def list_files(
     self,
-    user_id: Optional[str] = None,
+    user_email: str,
     folder: Optional[str] = None,
     limit: Optional[int] = None
 ) -> List[Dict[str, Any]]
@@ -225,7 +225,7 @@ List files for a user, optionally filtered by folder.
 ```python
 async def search_files(
     self,
-    user_id: Optional[str] = None,
+    user_email: str,
     filename_pattern: Optional[str] = None,
     mime_type: Optional[str] = None,
     folder: Optional[str] = None,
@@ -265,7 +265,7 @@ Get detailed information about a specific file.
 ```python
 async def get_folder_stats(
     self,
-    user_id: str,
+    user_email: str,
     folder: str = ""
 ) -> Dict[str, Any]
 ```
@@ -334,13 +334,13 @@ except ValidationError as e:
 ### Upload Video Files
 
 ```python
-async def upload_video(video_path: str, user_id: str):
+async def upload_video(video_path: str, user_email: str):
     async with StreamlineFileUploader() as uploader:
         result = await uploader.upload_file(
             file_content=video_path,
             filename=Path(video_path).name,
             folder="veo/videos",
-            user_email=user_id
+            user_email=user_email
         )
         return result
 
@@ -352,7 +352,7 @@ print(f"Video uploaded to: {result.public_url}")
 ### Upload Multiple Files
 
 ```python
-async def upload_multiple_files(files: list, user_id: str):
+async def upload_multiple_files(files: list, user_email: str):
     async with StreamlineFileUploader() as uploader:
         results = []
         for file_path in files:
@@ -360,7 +360,7 @@ async def upload_multiple_files(files: list, user_id: str):
                 file_content=file_path,
                 filename=Path(file_path).name,
                 folder="documents",
-                user_email=user_id
+                user_email=user_email
             )
             results.append(result)
         return results
@@ -373,14 +373,14 @@ results = await upload_multiple_files(files, "user@example.com")
 ### Upload with Custom Metadata
 
 ```python
-async def upload_with_metadata(file_content: bytes, filename: str, user_id: str):
+async def upload_with_metadata(file_content: bytes, filename: str, user_email: str):
     options = UploadOptions(
         folder="projects/assets",
         metadata={
             "project_id": "proj_123",
             "asset_type": "image",
             "tags": ["logo", "branding"],
-            "created_by": user_id
+            "created_by": user_email
         }
     )
     
@@ -389,7 +389,7 @@ async def upload_with_metadata(file_content: bytes, filename: str, user_id: str)
             file_content=file_content,
             filename=filename,
             options=options,
-            user_email=user_id
+            user_email=user_email
         )
         return result
 ```

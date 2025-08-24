@@ -79,7 +79,7 @@ class StreamlineFileUploader:
         Args:
             file_content: File content as bytes, file object, file path, or string path
             filename: Name of the file (will be preserved if options.preserve_filename=True)
-            user_email: User email for the upload (defaults to default_user_email)
+            user_email: User email for the upload (required)
             options: Upload options (folder, mime_type, metadata, etc.)
             **kwargs: Additional options (folder, mime_type, metadata, preserve_filename)
         
