@@ -16,7 +16,7 @@ class BatchUploader:
     async def upload_files(
         self,
         files: List[Dict[str, Any]],
-        user_email: str = None,  # ← REQUIRED: No default, must pass each time
+        user_email: str,  # ← REQUIRED: No default, must pass each time
         options: Optional[UploadOptions] = None
     ) -> List[UploadResult]:
         """

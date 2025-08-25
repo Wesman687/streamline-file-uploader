@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="streamline-file-uploader",
-    version="1.0.4",
+    version="1.0.5",
     author="Stream-Line AI",
     author_email="support@stream-lineai.com",
     description="Easy-to-use file uploader for Stream-Line file server with folder support and automatic organization",
