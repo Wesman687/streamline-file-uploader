@@ -40,6 +40,10 @@ async def main():
         print(f"📄 Filename: {result.filename}")
         print(f"🔒 SHA256: {result.sha256}")
         
+        # ✅ IMPORTANT: Always use the public_url from the result!
+        # This URL includes the UUID prefix and will work correctly
+        print(f"🌐 Working file URL: {result.public_url}")
+        
         # List files for the user
         files = await uploader.list_files(user_email="user@example.com")
         print(f"\n📋 User has {len(files)} files")

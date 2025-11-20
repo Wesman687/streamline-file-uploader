@@ -264,3 +264,52 @@ class FileManager:
             "mime_types": mime_types,
             "last_modified": last_modified
         }
+    
+    async def verify_file_access(self, public_url: str, timeout: int = 10) -> bool:
+        """
+        Verify that a file is accessible via its public URL
+        
+        Args:
+            public_url: The public URL to test
+            timeout: Request timeout in seconds
+        
+        Returns:
+            True if file is accessible, False otherwise
+        """
+        try:
+            response = await self.uploader.client.head(
+                public_url,
+                timeout=timeout,
+                follow_redirects=True
+            )
+            return response.status_code == 200
+        except Exception:
+            return False
+    
+    async def wait_for_file_availability(
+        self, 
+        public_url: str, 
+        max_wait: int = 30, 
+        check_interval: float = 0.5
+    ) -> bool:
+        """
+        Wait for a file to become available after upload
+        
+        Args:
+            public_url: The public URL to check
+            max_wait: Maximum time to wait in seconds
+            check_interval: Time between checks in seconds
+        
+        Returns:
+            True if file becomes available, False if timeout
+        """
+        import asyncio
+        elapsed = 0
+        
+        while elapsed < max_wait:
+            if await self.verify_file_access(public_url, timeout=5):
+                return True
+            await asyncio.sleep(check_interval)
+            elapsed += check_interval
+        
+        return False

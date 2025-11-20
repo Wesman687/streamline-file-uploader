@@ -48,6 +48,7 @@ async def main():
         print(f"   Public URL: {result1.public_url}")
         print(f"   Folder: {result1.folder}")
         print(f"   Metadata: {options.metadata}")
+        print(f"   🌐 Working URL: {result1.public_url}")  # This URL will work!
         
         # Example 2: Upload from file path (if file exists)
         print("\n📂 Example 2: Upload from file path")
@@ -65,6 +66,7 @@ async def main():
             print(f"   File key: {result2.file_key}")
             print(f"   Public URL: {result2.public_url}")
             print(f"   Size: {result2.size} bytes")
+            print(f"   🌐 Working URL: {result2.public_url}")  # This URL will work!
         else:
             print("⚠️  Test file not found, skipping path upload example")
         
@@ -91,6 +93,7 @@ async def main():
         print(f"✅ Batch upload completed! {len(batch_results)} files uploaded")
         for i, result in enumerate(batch_results):
             print(f"   File {i+1}: {result.filename} -> {result.file_key}")
+            print(f"   🌐 Working URL: {result.public_url}")  # This URL will work!
         
         print("\n🎉 All examples completed successfully!")
         

@@ -46,9 +46,13 @@ async def main():
         user_email="user@example.com"
     )
     
+    # ✅ CORRECT: Use the public_url from the result
     print(f"File uploaded: {result.public_url}")
     print(f"File key: {result.file_key}")
     print(f"File size: {result.size} bytes")
+    
+    # ✅ CORRECT: Access the file using the returned URL
+    file_url = result.public_url  # This URL will work!
     
     await uploader.close()
 
@@ -81,6 +85,9 @@ result = await uploader.upload_file(
     user_email="user@example.com"
 )
 
+# ✅ CORRECT: Use the returned public_url
+video_url = result.public_url  # This URL includes the UUID prefix and will work!
+
 # Upload to documents/invoices folder
 result = await uploader.upload_file(
     file_content=invoice_bytes,
@@ -88,6 +95,9 @@ result = await uploader.upload_file(
     folder="documents/invoices",
     user_email="user@example.com"
 )
+
+# ✅ CORRECT: Use the returned public_url
+invoice_url = result.public_url  # This URL includes the UUID prefix and will work!
 ```
 
 ### Upload from File Path
@@ -97,8 +107,12 @@ result = await uploader.upload_file(
 result = await uploader.upload_file(
     file_content="/path/to/video.mp4",
     filename="video.mp4",
-    folder="veo/videos"
+    folder="veo/videos",
+    user_email="user@example.com"
 )
+
+# ✅ CORRECT: Use the returned public_url
+video_url = result.public_url  # This URL includes the UUID prefix and will work!
 ```
 
 ### Upload with Metadata
@@ -118,8 +132,12 @@ options = UploadOptions(
 result = await uploader.upload_file(
     file_content=video_bytes,
     filename="tutorial.mp4",
-    options=options
+    options=options,
+    user_email="user@example.com"
 )
+
+# ✅ CORRECT: Use the returned public_url
+tutorial_url = result.public_url  # This URL includes the UUID prefix and will work!
 ```
 
 ### Context Manager Usage
@@ -129,8 +147,12 @@ async with StreamlineFileUploader() as uploader:
     result = await uploader.upload_file(
         file_content=file_bytes,
         filename="file.txt",
-        folder="documents"
+        folder="documents",
+        user_email="user@example.com"
     )
+    
+    # ✅ CORRECT: Use the returned public_url
+    file_url = result.public_url  # This URL includes the UUID prefix and will work!
     # Uploader automatically closes
 ```
 
@@ -176,6 +198,24 @@ Upload a file to the Stream-Line file server.
 **Returns:**
 - `UploadResult` object with file details
 
+**⚠️ IMPORTANT: File URLs and Access**
+
+**NEVER manually construct file URLs!** Always use the `file_key` or `public_url` returned by the server:
+
+```python
+# ✅ CORRECT: Use the file_key from server response
+result = await uploader.upload_file(...)
+file_url = f"https://file-server.stream-lineai.com/{result.file_key}"
+# OR use the public_url directly
+file_url = result.public_url
+
+# ❌ WRONG: Don't manually construct URLs
+# This will NOT work because files have UUID prefixes!
+wrong_url = f"https://file-server.stream-lineai.com/storage/{user_email}/{folder}/{filename}"
+```
+
+**Why?** Files are stored with UUID prefixes (e.g., `abc12345_filename.jpg`) to prevent conflicts. The server response contains the correct `file_key` with this prefix.
+
 ### UploadOptions
 
 ```python
@@ -190,8 +230,8 @@ class UploadOptions:
 
 ```python
 class UploadResult:
-    file_key: str        # Unique identifier for the uploaded file
-    public_url: str      # Public URL to access the file
+    file_key: str        # Unique identifier for the uploaded file (includes UUID prefix)
+    public_url: str      # Public URL to access the file (USE THIS!)
     size: int            # Size of the uploaded file in bytes
     mime_type: str       # MIME type of the uploaded file
     folder: Optional[str] # Folder the file was uploaded to
@@ -199,9 +239,11 @@ class UploadResult:
     sha256: str          # SHA256 hash of the uploaded file
     
     # Properties
-    download_url: str    # Direct download URL
+    download_url: str    # Direct download URL (same as public_url)
     file_id: str         # File ID extracted from file key
 ```
+
+**⚠️ IMPORTANT:** Always use `result.public_url` or `result.file_key` for file access. Never manually construct URLs!
 
 ## 📁 File Management
 
@@ -305,6 +347,50 @@ async def manage_files():
         print(f"Documents folder: {stats['file_count']} files, {stats['total_size']} bytes")
 ```
 
+## ⚠️ CRITICAL: File URL Construction
+
+**🚨 NEVER manually construct file URLs! This is the #1 source of errors.**
+
+### ❌ WRONG - Manual URL Construction (Will NOT Work!)
+
+```python
+# ❌ DON'T DO THIS - URLs will be broken!
+user_email = "user@example.com"
+folder = "documents"
+filename = "file.pdf"
+wrong_url = f"https://file-server.stream-lineai.com/storage/{user_email}/{folder}/{filename}"
+# Result: https://file-server.stream-lineai.com/storage/user@example.com/documents/file.pdf
+# This URL will return 404 because it's missing the UUID prefix!
+```
+
+### ✅ CORRECT - Use Server Response
+
+```python
+# ✅ ALWAYS DO THIS - URLs will work!
+result = await uploader.upload_file(...)
+correct_url = result.public_url
+# Result: https://file-server.stream-lineai.com/storage/user@example.com/documents/abc12345_file.pdf
+# This URL includes the UUID prefix and will work!
+
+# OR construct from file_key
+correct_url = f"https://file-server.stream-lineai.com/{result.file_key}"
+```
+
+### Why This Matters
+
+Files are stored with **UUID prefixes** (e.g., `abc12345_filename.jpg`) to prevent naming conflicts. The server response contains the correct `file_key` with this prefix. Manual construction will always fail because you don't know the UUID.
+
+### For Existing Files
+
+```python
+# ✅ CORRECT: List files to get the correct file_key
+files = await uploader.list_files(user_email="user@example.com")
+for file_info in files:
+    file_key = file_info["key"]  # Contains the UUID prefix
+    file_url = f"https://file-server.stream-lineai.com/{file_key}"
+    # This URL will work!
+```
+
 ## 🚨 Error Handling
 
 The package provides custom exceptions for different error scenarios:
@@ -346,6 +432,7 @@ async def upload_video(video_path: str, user_email: str):
 
 # Usage
 result = await upload_video("/path/to/video.mp4", "user@example.com")
+# ✅ CORRECT: Use the returned public_url
 print(f"Video uploaded to: {result.public_url}")
 ```
 
@@ -368,6 +455,10 @@ async def upload_multiple_files(files: list, user_email: str):
 # Usage
 files = ["doc1.pdf", "doc2.docx", "doc3.txt"]
 results = await upload_multiple_files(files, "user@example.com")
+
+# ✅ CORRECT: Use the returned public_urls
+for result in results:
+    print(f"File uploaded to: {result.public_url}")
 ```
 
 ### Upload with Custom Metadata
@@ -391,6 +482,8 @@ async def upload_with_metadata(file_content: bytes, filename: str, user_email: s
             options=options,
             user_email=user_email
         )
+        # ✅ CORRECT: Use the returned public_url
+        print(f"File uploaded to: {result.public_url}")
         return result
 ```
 

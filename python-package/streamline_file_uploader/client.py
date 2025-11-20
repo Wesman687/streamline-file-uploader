@@ -194,11 +194,16 @@ class StreamlineFileUploader:
             
             complete_data = complete_response.json()
             
-            # Build public URL
-            public_url = f"{self.base_url}/storage/{user_email}"
-            if options.folder:
-                public_url += f"/{options.folder}"
-            public_url += f"/{actual_filename}"
+            # Build public URL using the actual file_key from the server response
+            file_key = complete_data["key"]
+            
+            # The file_key from server is in format: storage/{user_id}/{folder}/{uuid_filename}
+            # Files are served publicly at: /storage/{user_id}/{file_path}
+            # So we can use the file_key directly as the path
+            public_url = f"{self.base_url}/{file_key}"
+            
+            # Note: Files are automatically public and accessible via this URL
+            # No additional "make public" step is needed
             
             return UploadResult(
                 file_key=complete_data["key"],
@@ -563,12 +568,12 @@ class StreamlineFileUploader:
     
     async def list_files(
         self,
-        user_id: Optional[str] = None,
+        user_email: Optional[str] = None,
         folder: Optional[str] = None,
         limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Convenience method for listing files"""
-        return await self.file_manager.list_files(user_id, folder, limit)
+        return await self.file_manager.list_files(user_email, folder, limit)
     
     async def search_files(
         self,
@@ -604,6 +609,38 @@ class StreamlineFileUploader:
             Dictionary with folder statistics
         """
         return await self.file_manager.get_folder_stats(user_email, folder)
+    
+    async def verify_file_access(self, public_url: str, timeout: int = 10) -> bool:
+        """
+        Verify that a file is accessible via its public URL
+        
+        Args:
+            public_url: The public URL to test
+            timeout: Request timeout in seconds
+        
+        Returns:
+            True if file is accessible, False otherwise
+        """
+        return await self.file_manager.verify_file_access(public_url, timeout)
+    
+    async def wait_for_file_availability(
+        self, 
+        public_url: str, 
+        max_wait: int = 30, 
+        check_interval: float = 0.5
+    ) -> bool:
+        """
+        Wait for a file to become available after upload
+        
+        Args:
+            public_url: The public URL to check
+            max_wait: Maximum time to wait in seconds
+            check_interval: Time between checks in seconds
+        
+        Returns:
+            True if file becomes available, False if timeout
+        """
+        return await self.file_manager.wait_for_file_availability(public_url, max_wait, check_interval)
     
     async def delete_file(self, file_key: str) -> Dict[str, Any]:
         """Convenience method for deleting files"""
