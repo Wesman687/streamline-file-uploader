@@ -446,34 +446,6 @@ class StreamlineFileUploader:
                 raise
             raise UploadError(f"Error getting file info: {str(e)}", "info")
     
-    async def delete_file(self, file_key: str) -> bool:
-        """
-        Delete a file from the server
-        
-        Args:
-            file_key: The file key to delete
-        
-        Returns:
-            True if deletion was successful
-        
-        Raises:
-            FileServerError: If deletion fails
-        """
-        try:
-            # This endpoint needs to be implemented on the file server
-            # For now, we'll raise an error indicating it's not implemented
-            
-            # TODO: Implement when file server supports deletion
-            raise FileServerError(
-                "File deletion not yet implemented on the file server",
-                501
-            )
-            
-        except Exception as e:
-            if isinstance(e, FileServerError):
-                raise
-            raise UploadError(f"Error deleting file: {str(e)}", "delete")
-    
     async def get_download_url(self, file_key: str, expires_in: int = 3600) -> str:
         """
         Get a signed download URL for a file
